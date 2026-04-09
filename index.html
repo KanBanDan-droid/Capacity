@@ -6,15 +6,25 @@
 <title>Kapazitätsplanung</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f8f6;color:#1a1a1a;padding:2rem;font-size:14px}
-  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.75rem;flex-wrap:wrap;gap:10px}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f8f6;color:#1a1a1a;font-size:14px}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 2rem 0;flex-wrap:wrap;gap:10px}
   h1{font-size:20px;font-weight:600;color:#1a1a1a}
   .save-status{font-size:12px;padding:5px 12px;border-radius:6px;transition:opacity .3s}
   .save-status.saved{background:#f0f8ea;color:#3a6010;border:1px solid #c0dc90}
   .save-status.saving{background:#fff8ec;color:#8a5500;border:1px solid #f0d090}
   .save-status.error{background:#fef0f0;color:#8a0000;border:1px solid #f0c0c0}
   .save-status.hidden{opacity:0;pointer-events:none}
-  .sec{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.06em;margin:2rem 0 .75rem}
+
+  .tab-nav{display:flex;gap:0;padding:1.25rem 2rem 0;border-bottom:1px solid #e8e8e4;margin-top:1rem}
+  .tab-btn{padding:10px 22px;font-size:13px;font-weight:500;border:none;background:transparent;color:#888;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
+  .tab-btn:hover{color:#444}
+  .tab-btn.active{color:#1a1a1a;border-bottom-color:#1a1a1a}
+
+  .tab-content{display:none;padding:1.5rem 2rem 2rem}
+  .tab-content.active{display:block}
+
+  .sec{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.06em;margin:1.5rem 0 .75rem}
+  .sec:first-child{margin-top:0}
   .card{background:#fff;border:1px solid #e8e8e4;border-radius:10px;padding:14px 16px;margin-bottom:10px}
   input,select{padding:5px 9px;font-size:13px;border:1px solid #ddd;border-radius:6px;background:#fafaf8;color:#1a1a1a;outline:none}
   input:focus,select:focus{border-color:#aaa;background:#fff}
@@ -37,6 +47,7 @@
   .kw-btn.blocked{background:#fff8ec;border-color:#f0a040;color:#8a5500;font-weight:500}
   .proj-entry{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0;border-top:1px solid #f0f0ec}
   .proj-entry:first-child{border-top:none;padding-top:0}
+
   .gantt-wrap{overflow-x:auto;margin-bottom:1.5rem}
   .gantt{min-width:520px}
   .g-hdr{display:grid;margin-bottom:3px}
@@ -48,6 +59,13 @@
   .g-off{height:22px;background:repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(0,0,0,.06) 3px,rgba(0,0,0,.06) 6px);border-radius:3px}
   .g-sep{font-size:11px;font-weight:600;color:#444;padding:10px 0 4px;border-bottom:1px solid #e4e4e0;margin-bottom:5px;display:flex;align-items:center;gap:7px}
   .g-sep-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+  .gantt-toggle{display:flex;border:1px solid #ddd;border-radius:7px;overflow:hidden;width:fit-content;margin-bottom:1rem}
+  .gantt-toggle-btn{padding:7px 18px;font-size:12px;border:none;border-right:1px solid #ddd;background:#fff;color:#666;cursor:pointer;transition:all .15s}
+  .gantt-toggle-btn:last-child{border-right:none}
+  .gantt-toggle-btn.active{background:#1a1a1a;color:#fff}
+  .gantt-toggle-btn:hover:not(.active){background:#f0f0ec}
+
   .util-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
   .util-card{background:#fff;border:1px solid #e8e8e4;border-radius:10px;padding:12px 14px}
   .bar-wrap{height:6px;background:#f0f0ec;border-radius:4px;overflow:hidden;margin:6px 0;border:1px solid #e8e8e4}
@@ -58,11 +76,6 @@
   .legend{display:flex;gap:14px;margin-bottom:.75rem;flex-wrap:wrap}
   .legend-item{display:flex;align-items:center;gap:5px;font-size:12px;color:#888}
   .legend-hatch{width:14px;height:14px;border-radius:3px;background:repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(0,0,0,.1) 3px,rgba(0,0,0,.1) 6px);border:1px solid #ddd}
-  .toggle-bar{display:flex;border:1px solid #ddd;border-radius:7px;overflow:hidden;width:fit-content;margin-bottom:1rem}
-  .toggle-btn{padding:7px 18px;font-size:12px;border:none;border-right:1px solid #ddd;background:#fff;color:#666;cursor:pointer;transition:all .15s}
-  .toggle-btn:last-child{border-right:none}
-  .toggle-btn.active{background:#1a1a1a;color:#fff}
-  .toggle-btn:hover:not(.active){background:#f0f0ec}
   .loading{text-align:center;padding:4rem;color:#aaa;font-size:14px}
   .row{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
   .row:last-child{margin-bottom:0}
@@ -79,26 +92,30 @@
   </div>
 </div>
 
-<div id="app"><div class="loading">Verbinde mit Datenbank...</div></div>
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('gantt')">Gantt</button>
+  <button class="tab-btn" onclick="switchTab('projekte')">Projekte</button>
+  <button class="tab-btn" onclick="switchTab('entwickler')">Entwickler</button>
+</div>
+
+<div id="tab-gantt" class="tab-content active">
+  <div class="loading">Verbinde mit Datenbank...</div>
+</div>
+<div id="tab-projekte" class="tab-content"></div>
+<div id="tab-entwickler" class="tab-content"></div>
 
 <script>
 const SUPABASE_URL = 'https://ongnohzbwmyhnfqezjty.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9uZ25vaHpid215aG5mcWV6anR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MjE2NzcsImV4cCI6MjA5MTI5NzY3N30.BklaGJPl2RtOr9RR2DRTYnQPhvHlNj58ITC_XtcxR8Q';
 const API = `${SUPABASE_URL}/rest/v1/kapplan?id=eq.main`;
-const HEADERS = {
-  'Content-Type': 'application/json',
-  'apikey': SUPABASE_KEY,
-  'Authorization': `Bearer ${SUPABASE_KEY}`,
-  'Prefer': 'return=minimal'
-};
+const HEADERS = {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Prefer':'return=minimal'};
 
-const WEEKS = 12;
-const KW0 = 15;
-const COLORS = ['#378ADD','#1D9E75','#D85A30','#D4537E','#7F77DD','#BA7517','#639922','#185FA5'];
-const AVT_BG = ['#dbeeff','#d0f5e8','#fdecd8','#fce4ef','#eae8fd','#fcebd0'];
-const AVT_TX = ['#0a4080','#0a5535','#7a3800','#7a1840','#3a2888','#7a4000'];
+const WEEKS=12, KW0=15;
+const COLORS=['#378ADD','#1D9E75','#D85A30','#D4537E','#7F77DD','#BA7517','#639922','#185FA5'];
+const AVT_BG=['#dbeeff','#d0f5e8','#fdecd8','#fce4ef','#eae8fd','#fcebd0'];
+const AVT_TX=['#0a4080','#0a5535','#7a3800','#7a1840','#3a2888','#7a4000'];
 
-const DEFAULT = {
+const DEFAULT={
   devs:[
     {id:1,name:'Anna M.',cap:40,blocked:[],color:AVT_BG[0],ctxt:AVT_TX[0]},
     {id:2,name:'Ben K.',cap:32,blocked:[18,19],color:AVT_BG[1],ctxt:AVT_TX[1]},
@@ -109,64 +126,55 @@ const DEFAULT = {
     {id:2,name:'API Migration',color:'#1D9E75',assignments:[{devId:2,hpw:24,start:16,dur:4}]},
     {id:3,name:'Bug Fixing',color:'#D85A30',assignments:[{devId:3,hpw:16,start:15,dur:8}]},
   ],
-  dc:10, pc:10
+  dc:10,pc:10
 };
 
-let ganttView='dev', devs=[], projects=[], dc=10, pc=10, saveTimer=null;
+let activeTab='gantt', ganttView='dev';
+let devs=[], projects=[], dc=10, pc=10, saveTimer=null;
+
+function switchTab(tab){
+  activeTab=tab;
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>{
+    b.className='tab-btn'+((['gantt','projekte','entwickler'][i])===tab?' active':'');
+  });
+  document.querySelectorAll('.tab-content').forEach(el=>el.className='tab-content');
+  document.getElementById('tab-'+tab).className='tab-content active';
+}
 
 async function loadData(){
   try{
-    const res = await fetch(API, {headers: HEADERS});
-    const rows = await res.json();
-    if(!res.ok) throw new Error(rows.message || 'Ladefehler');
-    const d = rows.length > 0 ? rows[0].data : DEFAULT;
-    devs = d.devs || DEFAULT.devs;
-    projects = d.projects || DEFAULT.projects;
-    dc = d.dc || 10;
-    pc = d.pc || 10;
-    renderApp();
-  } catch(e){
-    document.getElementById('app').innerHTML =
-      `<div class="loading" style="color:#e24b4a">Fehler beim Laden: ${e.message}<br><small>Supabase-Verbindung prüfen</small></div>`;
+    const res=await fetch(API,{headers:HEADERS});
+    const rows=await res.json();
+    if(!res.ok) throw new Error(rows.message||'Ladefehler');
+    const d=rows.length>0&&Object.keys(rows[0].data).length>0?rows[0].data:DEFAULT;
+    devs=d.devs||DEFAULT.devs;
+    projects=d.projects||DEFAULT.projects;
+    dc=d.dc||10; pc=d.pc||10;
+    renderAll();
+  }catch(e){
+    document.getElementById('tab-gantt').innerHTML=`<div class="loading" style="color:#e24b4a">Fehler: ${e.message}</div>`;
   }
 }
 
 function scheduleSave(){
   clearTimeout(saveTimer);
   showStatus('saving','Speichert...');
-  saveTimer = setTimeout(doSave, 900);
+  saveTimer=setTimeout(doSave,900);
 }
-
 async function doSave(){
   try{
-    const res = await fetch(API, {
-      method:'PATCH',
-      headers: HEADERS,
-      body: JSON.stringify({data:{devs,projects,dc,pc}, updated_at: new Date().toISOString()})
-    });
-    if(!res.ok){
-      const err = await res.json();
-      throw new Error(err.message || 'Speicherfehler');
-    }
+    const res=await fetch(API,{method:'PATCH',headers:HEADERS,body:JSON.stringify({data:{devs,projects,dc,pc},updated_at:new Date().toISOString()})});
+    if(!res.ok){const e=await res.json();throw new Error(e.message||'Fehler')}
     showStatus('saved','Gespeichert');
-    setTimeout(()=>showStatus('hidden',''), 2000);
-  } catch(e){
-    showStatus('error','Fehler: '+e.message);
-  }
+    setTimeout(()=>showStatus('hidden',''),2000);
+  }catch(e){showStatus('error','Fehler: '+e.message)}
 }
-
 async function resetData(){
-  if(!confirm('Alle Daten auf Beispieldaten zurücksetzen?')) return;
+  if(!confirm('Alle Daten auf Beispieldaten zurücksetzen?'))return;
   devs=[...DEFAULT.devs]; projects=[...DEFAULT.projects]; dc=10; pc=10;
-  await doSave();
-  renderApp();
+  await doSave(); renderAll();
 }
-
-function showStatus(type, msg){
-  const el=document.getElementById('saveStatus');
-  el.className='save-status '+type;
-  el.textContent=msg;
-}
+function showStatus(type,msg){const el=document.getElementById('saveStatus');el.className='save-status '+type;el.textContent=msg;}
 
 function initials(n){return n.split(' ').map(x=>x[0]).join('').toUpperCase().slice(0,2)}
 function kwList(){return Array.from({length:WEEKS},(_,i)=>KW0+i)}
@@ -175,58 +183,27 @@ function projById(id){return projects.find(p=>p.id===id)}
 function devOpts(sel){return devs.map(d=>`<option value="${d.id}"${d.id===sel?' selected':''}>${d.name}</option>`).join('')}
 function kwOpts(sel){return kwList().map(kw=>`<option value="${kw}"${kw===sel?' selected':''}>KW ${kw}</option>`).join('')}
 
-function renderApp(){
-  document.getElementById('app').innerHTML=`
-    <div class="sec">Entwickler &amp; Kapazitäten</div>
-    <div id="devList"></div>
-    <button class="btn" onclick="addDev()" style="margin-bottom:1rem">+ Entwickler</button>
-    <div class="sec">Projekte</div>
-    <div id="projList"></div>
-    <button class="btn" onclick="addProj()" style="margin-bottom:1rem">+ Projekt</button>
-    <div class="sec">Gantt-Übersicht</div>
-    <div class="toggle-bar">
-      <button class="toggle-btn active" id="btnDev" onclick="setView('dev')">Nach Entwickler</button>
-      <button class="toggle-btn" id="btnProj" onclick="setView('proj')">Nach Projekt</button>
+function renderGanttTab(){
+  document.getElementById('tab-gantt').innerHTML=`
+    <div class="gantt-toggle">
+      <button class="gantt-toggle-btn${ganttView==='dev'?' active':''}" onclick="setGanttView('dev')">Nach Entwickler</button>
+      <button class="gantt-toggle-btn${ganttView==='proj'?' active':''}" onclick="setGanttView('proj')">Nach Projekt</button>
     </div>
     <div class="legend"><div class="legend-item"><div class="legend-hatch"></div> Abwesend / blockiert</div></div>
     <div class="gantt-wrap"><div class="gantt" id="gantt"></div></div>
-    <div class="sec">Auslastung pro Entwickler</div>
+    <div class="sec">Auslastung</div>
     <div class="util-grid" id="utilGrid"></div>`;
-  renderAll();
-}
-
-function setView(v){
-  ganttView=v;
-  document.getElementById('btnDev').className='toggle-btn'+(v==='dev'?' active':'');
-  document.getElementById('btnProj').className='toggle-btn'+(v==='proj'?' active':'');
   renderGantt();
+  renderUtil();
 }
 
-function renderDevs(){
-  document.getElementById('devList').innerHTML=devs.map(d=>{
-    const kws=kwList().map(kw=>{
-      const bl=d.blocked.includes(kw);
-      return `<button class="kw-btn${bl?' blocked':''}" onclick="toggleBlock(${d.id},${kw})">KW ${kw}</button>`;
-    }).join('');
-    return `<div class="card">
-      <div class="dev-header">
-        <div class="avatar" style="background:${d.color};color:${d.ctxt}">${initials(d.name)}</div>
-        <input type="text" value="${d.name}" onchange="devById(${d.id}).name=this.value;renderAll()">
-        <div class="row" style="margin:0;flex:1">
-          <span class="lbl">Kapazität</span>
-          <input type="number" min="1" max="60" value="${d.cap}" onchange="devById(${d.id}).cap=+this.value;renderAll()">
-          <span style="font-size:12px;color:#888">Std/Wo</span>
-        </div>
-        <button class="del" onclick="devs=devs.filter(x=>x.id!=${d.id});renderAll()">×</button>
-      </div>
-      <div style="font-size:12px;color:#888;margin-bottom:5px">Wochen blockieren (Urlaub / Abwesenheit):</div>
-      <div class="block-grid">${kws}</div>
-    </div>`;
-  }).join('');
+function setGanttView(v){
+  ganttView=v;
+  renderGanttTab();
 }
 
-function renderProjs(){
-  document.getElementById('projList').innerHTML=projects.map(p=>{
+function renderProjTab(){
+  document.getElementById('tab-projekte').innerHTML=projects.map(p=>{
     const aRows=p.assignments.map((a,ai)=>`
       <div class="proj-entry">
         <select onchange="pasgn(${p.id},${ai},'devId',+this.value)">${devOpts(a.devId)}</select>
@@ -249,15 +226,31 @@ function renderProjs(){
       ${aRows}
       <button class="btn btn-sm" style="margin-top:8px" onclick="addAsgn(${p.id})">+ Entwickler zuweisen</button>
     </div>`;
-  }).join('');
+  }).join('')+`<button class="btn" onclick="addProj()" style="margin-top:4px">+ Projekt</button>`;
 }
 
-function pasgn(pid,ai,k,v){const p=projById(pid);if(p&&p.assignments[ai])p.assignments[ai][k]=v;renderAll()}
-function rmAsgn(pid,ai){const p=projById(pid);if(p)p.assignments.splice(ai,1);renderAll()}
-function addAsgn(pid){const p=projById(pid);if(p)p.assignments.push({devId:devs[0]?.id||1,hpw:8,start:KW0,dur:4});renderAll()}
-function toggleBlock(did,kw){const d=devById(did);if(!d)return;const i=d.blocked.indexOf(kw);if(i>=0)d.blocked.splice(i,1);else d.blocked.push(kw);renderAll()}
-function addDev(){dc++;const ci=devs.length%AVT_BG.length;devs.push({id:dc,name:'Dev '+dc,cap:40,blocked:[],color:AVT_BG[ci],ctxt:AVT_TX[ci]});renderAll()}
-function addProj(){pc++;projects.push({id:pc,name:'Projekt '+pc,color:COLORS[pc%COLORS.length],assignments:[{devId:devs[0]?.id||1,hpw:8,start:KW0,dur:4}]});renderAll()}
+function renderDevTab(){
+  document.getElementById('tab-entwickler').innerHTML=devs.map(d=>{
+    const kws=kwList().map(kw=>{
+      const bl=d.blocked.includes(kw);
+      return `<button class="kw-btn${bl?' blocked':''}" onclick="toggleBlock(${d.id},${kw})">KW ${kw}</button>`;
+    }).join('');
+    return `<div class="card">
+      <div class="dev-header">
+        <div class="avatar" style="background:${d.color};color:${d.ctxt}">${initials(d.name)}</div>
+        <input type="text" value="${d.name}" onchange="devById(${d.id}).name=this.value;renderAll()">
+        <div class="row" style="margin:0;flex:1">
+          <span class="lbl">Kapazität</span>
+          <input type="number" min="1" max="60" value="${d.cap}" onchange="devById(${d.id}).cap=+this.value;renderAll()">
+          <span style="font-size:12px;color:#888">Std/Wo</span>
+        </div>
+        <button class="del" onclick="devs=devs.filter(x=>x.id!=${d.id});renderAll()">×</button>
+      </div>
+      <div style="font-size:12px;color:#888;margin-bottom:5px">Wochen blockieren (Urlaub / Abwesenheit):</div>
+      <div class="block-grid">${kws}</div>
+    </div>`;
+  }).join('')+`<button class="btn" onclick="addDev()" style="margin-top:4px">+ Entwickler</button>`;
+}
 
 function buildGrid(){
   const weeks=kwList();
@@ -265,7 +258,7 @@ function buildGrid(){
   return{weeks,cols:`130px ${weeks.map(()=>cw+'px').join(' ')}`};
 }
 function hdr(cols,weeks){
-  return `<div class="g-hdr" style="grid-template-columns:${cols}"><div></div>${weeks.map(w=>`<div class="g-wk-hdr">KW ${w}</div>`).join('')}</div>`;
+  return`<div class="g-hdr" style="grid-template-columns:${cols}"><div></div>${weeks.map(w=>`<div class="g-wk-hdr">KW ${w}</div>`).join('')}</div>`;
 }
 function drow(cols,label,weeks,start,dur,color,rlabel,blocked){
   const si=start-KW0,ei=Math.min(si+dur,WEEKS);
@@ -339,7 +332,19 @@ function renderUtil(){
   }).join('');
 }
 
-function renderAll(){renderDevs();renderProjs();renderGantt();renderUtil();scheduleSave()}
+function pasgn(pid,ai,k,v){const p=projById(pid);if(p&&p.assignments[ai])p.assignments[ai][k]=v;renderAll()}
+function rmAsgn(pid,ai){const p=projById(pid);if(p)p.assignments.splice(ai,1);renderAll()}
+function addAsgn(pid){const p=projById(pid);if(p)p.assignments.push({devId:devs[0]?.id||1,hpw:8,start:KW0,dur:4});renderAll()}
+function toggleBlock(did,kw){const d=devById(did);if(!d)return;const i=d.blocked.indexOf(kw);if(i>=0)d.blocked.splice(i,1);else d.blocked.push(kw);renderAll()}
+function addDev(){dc++;const ci=devs.length%AVT_BG.length;devs.push({id:dc,name:'Dev '+dc,cap:40,blocked:[],color:AVT_BG[ci],ctxt:AVT_TX[ci]});renderAll()}
+function addProj(){pc++;projects.push({id:pc,name:'Projekt '+pc,color:COLORS[pc%COLORS.length],assignments:[{devId:devs[0]?.id||1,hpw:8,start:KW0,dur:4}]});renderAll()}
+
+function renderAll(){
+  renderGanttTab();
+  renderProjTab();
+  renderDevTab();
+  scheduleSave();
+}
 
 loadData();
 </script>
