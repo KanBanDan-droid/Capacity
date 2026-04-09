@@ -542,15 +542,33 @@ function renderMiniCal(devId){
 function renderDevTab(){
   const t=td();
   document.getElementById('tab-entwickler').innerHTML=t.devs.map(d=>{
-    // find all assignments for this dev across all projects
+    const abs=getAbsences(d);
     const myAssignments=[];
     t.projects.forEach(p=>{
       p.assignments.forEach((a,ai)=>{
         if(a.devId===d.id) myAssignments.push({p,a,ai});
       });
     });
+
+    // For each assignment, compute weeks and effective capacity per week
+    // effectiveCap(week) = cap * (1 - absenceFraction(week))
+    // We show a per-project row with hpw input + a per-week breakdown of overloaded weeks
     const totalAllocated=myAssignments.reduce((s,{a})=>s+(a.hpw||0),0);
-    const overAlloc=totalAllocated>d.cap;
+
+    // Compute per-week load across all assignments to find overloaded weeks
+    const ganttWeeks=weeksBetween(t.ganttStart,t.ganttEnd);
+    const weekOverloads=ganttWeeks.map(wStart=>{
+      const frac=absenceFraction(wStart,abs);
+      const effectiveCap=Math.round(d.cap*(1-frac));
+      const wEnd=addDays(wStart,6);
+      let load=0;
+      myAssignments.forEach(({a})=>{
+        if(a.startDate<=wEnd&&a.endDate>=wStart) load+=(a.hpw||0);
+      });
+      return{wStart,frac,effectiveCap,load,over:load>effectiveCap&&effectiveCap>0};
+    }).filter(w=>w.load>0||w.frac>0);
+
+    const overloadedWeeks=weekOverloads.filter(w=>w.over);
 
     const projRows=myAssignments.length?`
       <div style="margin-top:10px;margin-bottom:6px">
@@ -572,11 +590,25 @@ function renderDevTab(){
               style="width:62px;font-weight:500;${(a.hpw||0)>0?'border-color:#378ADD;':''}">
             <span style="font-size:11px;color:#aaa">Std/Wo</span>
           </div>`).join('')}
-        <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:6px;padding-top:6px;border-top:0.5px solid #f0f0ec">
-          <span style="font-size:12px;color:#888">Gesamt zugeteilt:</span>
-          <span style="font-size:13px;font-weight:600;color:${overAlloc?'#e24b4a':totalAllocated===d.cap?'#3a9e60':'#1a1a1a'}">${totalAllocated} / ${d.cap} Std/Wo</span>
-          ${overAlloc?`<span style="font-size:11px;color:#e24b4a">Überlastet!</span>`:''}
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;padding-top:6px;border-top:0.5px solid #f0f0ec;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:12px;color:#888">Zugeteilt gesamt:</span>
+            <span style="font-size:13px;font-weight:600;color:${totalAllocated>d.cap?'#e24b4a':totalAllocated===d.cap?'#3a9e60':'#1a1a1a'}">${totalAllocated} / ${d.cap} Std/Wo</span>
+            ${abs.length?`<span style="font-size:11px;color:#aaa">(ohne Abwesenheiten)</span>`:''}
+          </div>
+          ${abs.length?`<div style="font-size:11px;color:#888">Effektive Kapazität variiert je Woche</div>`:''}
         </div>
+
+        ${overloadedWeeks.length?`
+          <div style="margin-top:8px;padding:8px 10px;background:#fef0f0;border:1px solid #f0c0c0;border-radius:6px">
+            <div style="font-size:11px;font-weight:600;color:#8a0000;margin-bottom:4px">Überlastung durch Abwesenheiten in ${overloadedWeeks.length} Woche${overloadedWeeks.length!==1?'n':''}:</div>
+            ${overloadedWeeks.map(w=>`
+              <div style="font-size:11px;color:#8a0000;display:flex;justify-content:space-between;padding:1px 0">
+                <span>Mo ${fmtMo(w.wStart)} – Fr ${fmtFr(w.wStart)}</span>
+                <span>${w.load}h zugeteilt / <b>${w.effectiveCap}h verfügbar</b> (${Math.round(w.frac*5)} Tag${Math.round(w.frac*5)!==1?'e':''} abwesend)</span>
+              </div>`).join('')}
+          </div>`:''}
       </div>`
     :`<div style="margin-top:8px;font-size:12px;color:#bbb;font-style:italic">Keine Projekte zugewiesen</div>`;
 
