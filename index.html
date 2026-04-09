@@ -7,12 +7,15 @@
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f8f6;color:#1a1a1a;padding:2rem;font-size:14px}
-  h1{font-size:20px;font-weight:600;margin-bottom:1.75rem;color:#1a1a1a}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.75rem;flex-wrap:wrap;gap:10px}
+  h1{font-size:20px;font-weight:600;color:#1a1a1a}
+  .save-status{font-size:12px;padding:5px 12px;border-radius:6px;transition:opacity .3s}
+  .save-status.saved{background:#f0f8ea;color:#3a6010;border:1px solid #c0dc90}
+  .save-status.saving{background:#fff8ec;color:#8a5500;border:1px solid #f0d090}
+  .save-status.error{background:#fef0f0;color:#8a0000;border:1px solid #f0c0c0}
+  .save-status.hidden{opacity:0;pointer-events:none}
   .sec{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.06em;margin:2rem 0 .75rem}
   .card{background:#fff;border:1px solid #e8e8e4;border-radius:10px;padding:14px 16px;margin-bottom:10px}
-  .row{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
-  .row:last-child{margin-bottom:0}
-  .lbl{font-size:12px;color:#888;min-width:80px}
   input,select{padding:5px 9px;font-size:13px;border:1px solid #ddd;border-radius:6px;background:#fafaf8;color:#1a1a1a;outline:none}
   input:focus,select:focus{border-color:#aaa;background:#fff}
   input[type=number]{width:68px}
@@ -21,7 +24,8 @@
   .btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;font-size:12px;border:1px solid #ddd;border-radius:7px;background:#fff;color:#444;cursor:pointer;transition:background .15s}
   .btn:hover{background:#f0f0ec}
   .btn-sm{padding:3px 8px;font-size:11px}
-  .del{background:none;border:none;cursor:pointer;color:#bbb;font-size:16px;padding:2px 5px;border-radius:4px;line-height:1;transition:color .15s}
+  .btn-danger{color:#aaa;border-color:#eee;font-size:12px}
+  .del{background:none;border:none;cursor:pointer;color:#bbb;font-size:16px;padding:2px 5px;border-radius:4px;line-height:1}
   .del:hover{color:#e24b4a}
   .dev-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
   .dev-header input[type=text]{font-size:14px;font-weight:600;background:transparent;border-color:transparent;width:160px}
@@ -39,7 +43,7 @@
   .g-row{display:grid;align-items:center;margin-bottom:4px}
   .g-lbl{font-size:11px;color:#888;padding-right:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .g-wk-hdr{font-size:10px;color:#aaa;text-align:center;border-left:1px solid #eee;padding:2px 0}
-  .g-cell{height:22px;border-left:1px solid #f0f0ec;position:relative}
+  .g-cell{height:22px;border-left:1px solid #f0f0ec}
   .g-block{height:22px;border-radius:3px;display:flex;align-items:center;padding:0 6px;font-size:10px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .g-off{height:22px;background:repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(0,0,0,.06) 3px,rgba(0,0,0,.06) 6px);border-radius:3px}
   .g-sep{font-size:11px;font-weight:600;color:#444;padding:10px 0 4px;border-bottom:1px solid #e4e4e0;margin-bottom:5px;display:flex;align-items:center;gap:7px}
@@ -59,84 +63,139 @@
   .toggle-btn:last-child{border-right:none}
   .toggle-btn.active{background:#1a1a1a;color:#fff}
   .toggle-btn:hover:not(.active){background:#f0f0ec}
+  .loading{text-align:center;padding:4rem;color:#aaa;font-size:14px}
+  .row{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+  .row:last-child{margin-bottom:0}
+  .lbl{font-size:12px;color:#888;min-width:80px}
 </style>
 </head>
 <body>
 
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.75rem">
-  <h1 style="margin-bottom:0">Kapazitätsplanung</h1>
-  <button class="btn" style="font-size:11px;color:#aaa;border-color:#eee" onclick="if(confirm('Alle Daten zurücksetzen?')){localStorage.removeItem('kapplan_v1');location.reload()}">Zurücksetzen</button>
+<div class="topbar">
+  <h1>Kapazitätsplanung</h1>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span class="save-status hidden" id="saveStatus"></span>
+    <button class="btn btn-danger" onclick="resetData()">Zurücksetzen</button>
+  </div>
 </div>
 
-<div class="sec">Entwickler &amp; Kapazitäten</div>
-<div id="devList"></div>
-<button class="btn" onclick="addDev()" style="margin-bottom:1rem">+ Entwickler</button>
-
-<div class="sec">Projekte</div>
-<div id="projList"></div>
-<button class="btn" onclick="addProj()" style="margin-bottom:1rem">+ Projekt</button>
-
-<div class="sec">Gantt-Übersicht</div>
-<div class="toggle-bar">
-  <button class="toggle-btn active" id="btnDev" onclick="setGanttView('dev')">Nach Entwickler</button>
-  <button class="toggle-btn" id="btnProj" onclick="setGanttView('proj')">Nach Projekt</button>
-</div>
-<div class="legend">
-  <div class="legend-item"><div class="legend-hatch"></div> Abwesend / blockiert</div>
-</div>
-<div class="gantt-wrap"><div class="gantt" id="gantt"></div></div>
-
-<div class="sec">Auslastung pro Entwickler</div>
-<div class="util-grid" id="utilGrid"></div>
+<div id="app"><div class="loading">Verbinde mit Datenbank...</div></div>
 
 <script>
+const SUPABASE_URL = 'https://ongnohzbwmyhnfqezjty.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9uZ25vaHpid215aG5mcWV6anR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MjE2NzcsImV4cCI6MjA5MTI5NzY3N30.BklaGJPl2RtOr9RR2DRTYnQPhvHlNj58ITC_XtcxR8Q';
+const API = `${SUPABASE_URL}/rest/v1/kapplan?id=eq.main`;
+const HEADERS = {
+  'Content-Type': 'application/json',
+  'apikey': SUPABASE_KEY,
+  'Authorization': `Bearer ${SUPABASE_KEY}`,
+  'Prefer': 'return=minimal'
+};
+
 const WEEKS = 12;
 const KW0 = 15;
 const COLORS = ['#378ADD','#1D9E75','#D85A30','#D4537E','#7F77DD','#BA7517','#639922','#185FA5'];
 const AVT_BG = ['#dbeeff','#d0f5e8','#fdecd8','#fce4ef','#eae8fd','#fcebd0'];
 const AVT_TX = ['#0a4080','#0a5535','#7a3800','#7a1840','#3a2888','#7a4000'];
 
-let ganttView = 'dev';
+const DEFAULT = {
+  devs:[
+    {id:1,name:'Anna M.',cap:40,blocked:[],color:AVT_BG[0],ctxt:AVT_TX[0]},
+    {id:2,name:'Ben K.',cap:32,blocked:[18,19],color:AVT_BG[1],ctxt:AVT_TX[1]},
+    {id:3,name:'Clara S.',cap:40,blocked:[],color:AVT_BG[2],ctxt:AVT_TX[2]},
+  ],
+  projects:[
+    {id:1,name:'Portal Redesign',color:'#378ADD',assignments:[{devId:1,hpw:20,start:15,dur:6},{devId:3,hpw:12,start:15,dur:4}]},
+    {id:2,name:'API Migration',color:'#1D9E75',assignments:[{devId:2,hpw:24,start:16,dur:4}]},
+    {id:3,name:'Bug Fixing',color:'#D85A30',assignments:[{devId:3,hpw:16,start:15,dur:8}]},
+  ],
+  dc:10, pc:10
+};
 
-const DEFAULT_DEVS = [
-  {id:1,name:'Anna M.',cap:40,blocked:[],color:AVT_BG[0],ctxt:AVT_TX[0]},
-  {id:2,name:'Ben K.',cap:32,blocked:[18,19],color:AVT_BG[1],ctxt:AVT_TX[1]},
-  {id:3,name:'Clara S.',cap:40,blocked:[],color:AVT_BG[2],ctxt:AVT_TX[2]},
-];
-const DEFAULT_PROJECTS = [
-  {id:1,name:'Portal Redesign',color:'#378ADD',assignments:[{devId:1,hpw:20,start:15,dur:6},{devId:3,hpw:12,start:15,dur:4}]},
-  {id:2,name:'API Migration',color:'#1D9E75',assignments:[{devId:2,hpw:24,start:16,dur:4}]},
-  {id:3,name:'Bug Fixing',color:'#D85A30',assignments:[{devId:3,hpw:16,start:15,dur:8}]},
-];
+let ganttView='dev', devs=[], projects=[], dc=10, pc=10, saveTimer=null;
 
-function loadData(){
+async function loadData(){
   try{
-    const saved=localStorage.getItem('kapplan_v1');
-    if(saved){
-      const d=JSON.parse(saved);
-      return{devs:d.devs||DEFAULT_DEVS,projects:d.projects||DEFAULT_PROJECTS,dc:d.dc||10,pc:d.pc||10};
+    const res = await fetch(API, {headers: HEADERS});
+    const rows = await res.json();
+    if(!res.ok) throw new Error(rows.message || 'Ladefehler');
+    const d = rows.length > 0 ? rows[0].data : DEFAULT;
+    devs = d.devs || DEFAULT.devs;
+    projects = d.projects || DEFAULT.projects;
+    dc = d.dc || 10;
+    pc = d.pc || 10;
+    renderApp();
+  } catch(e){
+    document.getElementById('app').innerHTML =
+      `<div class="loading" style="color:#e24b4a">Fehler beim Laden: ${e.message}<br><small>Supabase-Verbindung prüfen</small></div>`;
+  }
+}
+
+function scheduleSave(){
+  clearTimeout(saveTimer);
+  showStatus('saving','Speichert...');
+  saveTimer = setTimeout(doSave, 900);
+}
+
+async function doSave(){
+  try{
+    const res = await fetch(API, {
+      method:'PATCH',
+      headers: HEADERS,
+      body: JSON.stringify({data:{devs,projects,dc,pc}, updated_at: new Date().toISOString()})
+    });
+    if(!res.ok){
+      const err = await res.json();
+      throw new Error(err.message || 'Speicherfehler');
     }
-  }catch(e){}
-  return{devs:DEFAULT_DEVS,projects:DEFAULT_PROJECTS,dc:10,pc:10};
+    showStatus('saved','Gespeichert');
+    setTimeout(()=>showStatus('hidden',''), 2000);
+  } catch(e){
+    showStatus('error','Fehler: '+e.message);
+  }
 }
 
-function saveData(){
-  try{localStorage.setItem('kapplan_v1',JSON.stringify({devs,projects,dc,pc}));}catch(e){}
+async function resetData(){
+  if(!confirm('Alle Daten auf Beispieldaten zurücksetzen?')) return;
+  devs=[...DEFAULT.devs]; projects=[...DEFAULT.projects]; dc=10; pc=10;
+  await doSave();
+  renderApp();
 }
 
-const loaded=loadData();
-let devs=loaded.devs;
-let projects=loaded.projects;
-let dc=loaded.dc,pc=loaded.pc;
+function showStatus(type, msg){
+  const el=document.getElementById('saveStatus');
+  el.className='save-status '+type;
+  el.textContent=msg;
+}
 
 function initials(n){return n.split(' ').map(x=>x[0]).join('').toUpperCase().slice(0,2)}
 function kwList(){return Array.from({length:WEEKS},(_,i)=>KW0+i)}
 function devById(id){return devs.find(d=>d.id===id)}
 function projById(id){return projects.find(p=>p.id===id)}
-function devOptions(sel){return devs.map(d=>`<option value="${d.id}"${d.id===sel?' selected':''}>${d.name}</option>`).join('')}
-function kwOptions(sel){return kwList().map(kw=>`<option value="${kw}"${kw===sel?' selected':''}>KW ${kw}</option>`).join('')}
+function devOpts(sel){return devs.map(d=>`<option value="${d.id}"${d.id===sel?' selected':''}>${d.name}</option>`).join('')}
+function kwOpts(sel){return kwList().map(kw=>`<option value="${kw}"${kw===sel?' selected':''}>KW ${kw}</option>`).join('')}
 
-function setGanttView(v){
+function renderApp(){
+  document.getElementById('app').innerHTML=`
+    <div class="sec">Entwickler &amp; Kapazitäten</div>
+    <div id="devList"></div>
+    <button class="btn" onclick="addDev()" style="margin-bottom:1rem">+ Entwickler</button>
+    <div class="sec">Projekte</div>
+    <div id="projList"></div>
+    <button class="btn" onclick="addProj()" style="margin-bottom:1rem">+ Projekt</button>
+    <div class="sec">Gantt-Übersicht</div>
+    <div class="toggle-bar">
+      <button class="toggle-btn active" id="btnDev" onclick="setView('dev')">Nach Entwickler</button>
+      <button class="toggle-btn" id="btnProj" onclick="setView('proj')">Nach Projekt</button>
+    </div>
+    <div class="legend"><div class="legend-item"><div class="legend-hatch"></div> Abwesend / blockiert</div></div>
+    <div class="gantt-wrap"><div class="gantt" id="gantt"></div></div>
+    <div class="sec">Auslastung pro Entwickler</div>
+    <div class="util-grid" id="utilGrid"></div>`;
+  renderAll();
+}
+
+function setView(v){
   ganttView=v;
   document.getElementById('btnDev').className='toggle-btn'+(v==='dev'?' active':'');
   document.getElementById('btnProj').className='toggle-btn'+(v==='proj'?' active':'');
@@ -144,9 +203,9 @@ function setGanttView(v){
 }
 
 function renderDevs(){
-  document.getElementById('devList').innerHTML = devs.map(d=>{
-    const kws = kwList().map(kw=>{
-      const bl = d.blocked.includes(kw);
+  document.getElementById('devList').innerHTML=devs.map(d=>{
+    const kws=kwList().map(kw=>{
+      const bl=d.blocked.includes(kw);
       return `<button class="kw-btn${bl?' blocked':''}" onclick="toggleBlock(${d.id},${kw})">KW ${kw}</button>`;
     }).join('');
     return `<div class="card">
@@ -167,16 +226,16 @@ function renderDevs(){
 }
 
 function renderProjs(){
-  document.getElementById('projList').innerHTML = projects.map(p=>{
-    const aRows = p.assignments.map((a,ai)=>`
+  document.getElementById('projList').innerHTML=projects.map(p=>{
+    const aRows=p.assignments.map((a,ai)=>`
       <div class="proj-entry">
-        <select onchange="p_asgn(${p.id},${ai},'devId',+this.value)">${devOptions(a.devId)}</select>
-        <input type="number" min="1" max="60" value="${a.hpw}" onchange="p_asgn(${p.id},${ai},'hpw',+this.value)" style="width:60px">
+        <select onchange="pasgn(${p.id},${ai},'devId',+this.value)">${devOpts(a.devId)}</select>
+        <input type="number" min="1" max="60" value="${a.hpw}" onchange="pasgn(${p.id},${ai},'hpw',+this.value)" style="width:60px">
         <span style="font-size:11px;color:#888">Std/Wo</span>
-        <select onchange="p_asgn(${p.id},${ai},'start',+this.value)">${kwOptions(a.start)}</select>
-        <input type="number" min="1" max="${WEEKS}" value="${a.dur}" onchange="p_asgn(${p.id},${ai},'dur',+this.value)" style="width:60px">
+        <select onchange="pasgn(${p.id},${ai},'start',+this.value)">${kwOpts(a.start)}</select>
+        <input type="number" min="1" max="${WEEKS}" value="${a.dur}" onchange="pasgn(${p.id},${ai},'dur',+this.value)" style="width:60px">
         <span style="font-size:11px;color:#888">Wochen</span>
-        <button class="del btn-sm" onclick="removeAsgn(${p.id},${ai})">×</button>
+        <button class="del" onclick="rmAsgn(${p.id},${ai})">×</button>
       </div>`).join('');
     return `<div class="card">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
@@ -184,7 +243,7 @@ function renderProjs(){
         <input type="text" value="${p.name}" onchange="projById(${p.id}).name=this.value;renderAll()" style="flex:1;width:auto">
         <button class="del" onclick="projects=projects.filter(x=>x.id!=${p.id});renderAll()">×</button>
       </div>
-      <div style="display:grid;grid-template-columns:30px 1fr 80px 80px 80px 30px;gap:4px;margin-bottom:4px;font-size:11px;color:#888">
+      <div style="display:grid;grid-template-columns:30px 1fr 80px 80px 70px 24px;gap:4px;margin-bottom:4px;font-size:11px;color:#888">
         <span></span><span>Entwickler</span><span>Std/Wo</span><span>Start</span><span>Dauer</span><span></span>
       </div>
       ${aRows}
@@ -193,68 +252,62 @@ function renderProjs(){
   }).join('');
 }
 
-function p_asgn(pid,ai,key,val){const p=projById(pid);if(p&&p.assignments[ai])p.assignments[ai][key]=val;renderAll()}
-function removeAsgn(pid,ai){const p=projById(pid);if(p)p.assignments.splice(ai,1);renderAll()}
+function pasgn(pid,ai,k,v){const p=projById(pid);if(p&&p.assignments[ai])p.assignments[ai][k]=v;renderAll()}
+function rmAsgn(pid,ai){const p=projById(pid);if(p)p.assignments.splice(ai,1);renderAll()}
 function addAsgn(pid){const p=projById(pid);if(p)p.assignments.push({devId:devs[0]?.id||1,hpw:8,start:KW0,dur:4});renderAll()}
 function toggleBlock(did,kw){const d=devById(did);if(!d)return;const i=d.blocked.indexOf(kw);if(i>=0)d.blocked.splice(i,1);else d.blocked.push(kw);renderAll()}
+function addDev(){dc++;const ci=devs.length%AVT_BG.length;devs.push({id:dc,name:'Dev '+dc,cap:40,blocked:[],color:AVT_BG[ci],ctxt:AVT_TX[ci]});renderAll()}
+function addProj(){pc++;projects.push({id:pc,name:'Projekt '+pc,color:COLORS[pc%COLORS.length],assignments:[{devId:devs[0]?.id||1,hpw:8,start:KW0,dur:4}]});renderAll()}
 
 function buildGrid(){
   const weeks=kwList();
   const cw=Math.max(38,Math.floor((window.innerWidth-130-80)/WEEKS));
-  return{weeks,cw,cols:`130px ${weeks.map(()=>cw+'px').join(' ')}`};
+  return{weeks,cols:`130px ${weeks.map(()=>cw+'px').join(' ')}`};
 }
-
-function hdrRow(cols,weeks){
+function hdr(cols,weeks){
   return `<div class="g-hdr" style="grid-template-columns:${cols}"><div></div>${weeks.map(w=>`<div class="g-wk-hdr">KW ${w}</div>`).join('')}</div>`;
 }
-
-function dataRow(cols,label,weeks,startKW,dur,projColor,rowLabel,blockedWeeks){
-  const si=startKW-KW0, ei=Math.min(si+dur,WEEKS);
+function drow(cols,label,weeks,start,dur,color,rlabel,blocked){
+  const si=start-KW0,ei=Math.min(si+dur,WEEKS);
   const cells=weeks.map((_,i)=>{
-    const kw=KW0+i, bl=blockedWeeks&&blockedWeeks.includes(kw);
+    const kw=KW0+i,bl=blocked&&blocked.includes(kw);
     if(i>=si&&i<ei){
-      if(bl)return`<div class="g-cell"><div class="g-off" title="Abwesend"></div></div>`;
-      return`<div class="g-cell"><div class="g-block" style="background:${projColor}28;border:1.5px solid ${projColor};color:${projColor}">${i===si?rowLabel:''}</div></div>`;
+      if(bl)return`<div class="g-cell"><div class="g-off"></div></div>`;
+      return`<div class="g-cell"><div class="g-block" style="background:${color}28;border:1.5px solid ${color};color:${color}">${i===si?rlabel:''}</div></div>`;
     }
     return`<div class="g-cell">${bl?'<div class="g-off"></div>':''}</div>`;
   }).join('');
   return`<div class="g-row" style="grid-template-columns:${cols}"><div class="g-lbl">${label}</div>${cells}</div>`;
 }
-
-function renderGanttByDev(g){
-  let h=hdrRow(g.cols,g.weeks);
+function ganttByDev(g){
+  let h=hdr(g.cols,g.weeks);
   devs.forEach(dev=>{
-    h+=`<div class="g-sep"><div class="g-sep-dot" style="background:${dev.color};border:1px solid ${dev.ctxt}40"></div>${dev.name}<span style="font-weight:400;color:#aaa;margin-left:4px">${dev.cap} Std/Wo</span></div>`;
+    h+=`<div class="g-sep"><div class="g-sep-dot" style="background:${dev.color}"></div>${dev.name}<span style="font-weight:400;color:#aaa;margin-left:4px">${dev.cap} Std/Wo</span></div>`;
     const dp=projects.filter(p=>p.assignments.some(a=>a.devId===dev.id));
-    if(!dp.length){h+=dataRow(g.cols,'<i>keine Projekte</i>',g.weeks,KW0,0,'#ccc','',dev.blocked);return;}
-    dp.forEach(proj=>{
-      proj.assignments.filter(a=>a.devId===dev.id).forEach(a=>{
-        h+=dataRow(g.cols,proj.name,g.weeks,a.start,a.dur,proj.color,proj.name+' ('+a.hpw+'h)',dev.blocked);
-      });
-    });
+    if(!dp.length){h+=drow(g.cols,'<i style="color:#bbb">keine Projekte</i>',g.weeks,KW0,0,'#ccc','',dev.blocked);return;}
+    dp.forEach(proj=>proj.assignments.filter(a=>a.devId===dev.id).forEach(a=>{
+      h+=drow(g.cols,proj.name,g.weeks,a.start,a.dur,proj.color,proj.name+' ('+a.hpw+'h)',dev.blocked);
+    }));
   });
   return h;
 }
-
-function renderGanttByProj(g){
-  let h=hdrRow(g.cols,g.weeks);
+function ganttByProj(g){
+  let h=hdr(g.cols,g.weeks);
   projects.forEach(proj=>{
     h+=`<div class="g-sep"><div class="g-sep-dot" style="background:${proj.color}"></div>${proj.name}</div>`;
-    if(!proj.assignments.length){h+=`<div class="g-row" style="grid-template-columns:${g.cols}"><div class="g-lbl" style="font-style:italic;color:#aaa">keine Zuweisung</div>${g.weeks.map(()=>'<div class="g-cell"></div>').join('')}</div>`;return;}
+    if(!proj.assignments.length){h+=`<div class="g-row" style="grid-template-columns:${g.cols}"><div class="g-lbl" style="font-style:italic;color:#bbb">keine Zuweisung</div>${g.weeks.map(()=>'<div class="g-cell"></div>').join('')}</div>`;return;}
     proj.assignments.forEach(a=>{
       const dev=devById(a.devId);if(!dev)return;
-      const devLabel=`<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:${dev.color};display:inline-block"></span>${dev.name}</span>`;
-      h+=dataRow(g.cols,devLabel,g.weeks,a.start,a.dur,proj.color,dev.name+' ('+a.hpw+'h)',dev.blocked);
+      const lbl=`<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:${dev.color};display:inline-block"></span>${dev.name}</span>`;
+      h+=drow(g.cols,lbl,g.weeks,a.start,a.dur,proj.color,dev.name+' ('+a.hpw+'h)',dev.blocked);
     });
   });
   return h;
 }
-
 function renderGantt(){
   const g=buildGrid();
-  document.getElementById('gantt').innerHTML=ganttView==='dev'?renderGanttByDev(g):renderGanttByProj(g);
+  document.getElementById('gantt').innerHTML=ganttView==='dev'?ganttByDev(g):ganttByProj(g);
 }
-
 function renderUtil(){
   const weeks=kwList();
   document.getElementById('utilGrid').innerHTML=devs.map(dev=>{
@@ -286,12 +339,9 @@ function renderUtil(){
   }).join('');
 }
 
-function renderAll(){renderDevs();renderProjs();renderGantt();renderUtil();saveData()}
+function renderAll(){renderDevs();renderProjs();renderGantt();renderUtil();scheduleSave()}
 
-function addDev(){dc++;const ci=devs.length%AVT_BG.length;devs.push({id:dc,name:'Dev '+dc,cap:40,blocked:[],color:AVT_BG[ci],ctxt:AVT_TX[ci]});renderAll()}
-function addProj(){pc++;projects.push({id:pc,name:'Projekt '+pc,color:COLORS[pc%COLORS.length],assignments:[{devId:devs[0]?.id||1,hpw:8,start:KW0,dur:4}]});renderAll()}
-
-renderAll();
+loadData();
 </script>
 </body>
 </html>
