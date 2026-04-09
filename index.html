@@ -231,29 +231,21 @@ async function loadAll(){
 }
 function scheduleSave(team){
   clearTimeout(saveTimers[team]);
-  showStatus('saving','Speichert...');
-  saveTimers[team]=setTimeout(()=>doSave(team),600);
+  showStatus('saving','...');
+  saveTimers[team]=setTimeout(()=>doSave(team),300);
 }
 async function doSave(team){
   try{
     const res=await fetch(SBURL(team),{method:'PATCH',headers:HDRS,body:JSON.stringify({data:teams[team],updated_at:new Date().toISOString()})});
     if(!res.ok){const e=await res.json();throw new Error(e.message||'Fehler')}
-    showStatus('saved','Gespeichert');setTimeout(()=>showStatus('hidden',''),2000);
+    showStatus('saved','Gespeichert');setTimeout(()=>showStatus('hidden',''),1500);
   }catch(e){showStatus('error','Fehler: '+e.message)}
 }
-// Save immediately on page unload so hard reload doesn't lose data
-window.addEventListener('beforeunload',()=>{
-  Object.keys(teams).forEach(team=>{
-    if(!teams[team])return;
-    clearTimeout(saveTimers[team]);
-    // Use sendBeacon for reliable fire-and-forget on unload
-    const url=SBURL(team);
-    const body=JSON.stringify({data:teams[team],updated_at:new Date().toISOString()});
-    navigator.sendBeacon(url+'&method=PATCH',new Blob([body],{type:'application/json'}));
-    // Also try a synchronous-style fetch as fallback (keepalive)
-    fetch(url,{method:'PATCH',headers:HDRS,body,keepalive:true}).catch(()=>{});
-  });
-});
+async function saveNow(team){
+  clearTimeout(saveTimers[team]);
+  await doSave(team);
+}
+function saveAndRenderNow(){renderAll();saveNow(activeTeam);}
 async function resetTeam(){
   if(!confirm(`Team "${TEAM_META[activeTeam].label}" zurücksetzen?`))return;
   teams[activeTeam]=mkDefault(TEAM_META[activeTeam].label);
@@ -484,7 +476,7 @@ function renderProjTab(){
 
     return`<div class="card">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
-        <input type="color" value="${p.color}" onchange="projById(${p.id}).color=this.value;saveAndRender()">
+        <input type="color" value="${p.color}" onchange="projById(${p.id}).color=this.value;saveAndRenderNow()">
         <input type="text" value="${p.name}" onchange="projById(${p.id}).name=this.value;saveAndRender()" style="flex:1;min-width:120px">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
           <span class="field-lbl">Gesamtstunden:</span>
@@ -494,10 +486,10 @@ function renderProjTab(){
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
           <span class="field-lbl">Deadline:</span>
-          <input type="date" value="${p.deadline||''}" onchange="projById(${p.id}).deadline=this.value||'';saveAndRender()">
+          <input type="date" value="${p.deadline||''}" onchange="projById(${p.id}).deadline=this.value||'';saveAndRenderNow()">
           ${deadlineBadge(p.deadline)}
         </div>
-        <button class="del" onclick="td().projects=td().projects.filter(x=>x.id!=${p.id});saveAndRender()">×</button>
+        <button class="del" onclick="td().projects=td().projects.filter(x=>x.id!=${p.id});saveAndRenderNow()">×</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 140px 8px 140px 1fr 24px;gap:6px;align-items:center;margin-bottom:4px;font-size:11px;color:#888;padding:0 0 4px;border-bottom:0.5px solid #f0f0ec">
         <span>Entwickler</span><span>Von</span><span></span><span>Bis</span><span>Hochrechnung</span><span></span>
@@ -638,7 +630,7 @@ function renderDevTab(){
           <input type="number" min="1" max="60" value="${d.cap}" onchange="devById(${d.id}).cap=+this.value;saveAndRender()">
           <span style="font-size:12px;color:#888">Std/Wo</span>
         </div>
-        <button class="del" onclick="td().devs=td().devs.filter(x=>x.id!=${d.id});saveAndRender()">×</button>
+        <button class="del" onclick="td().devs=td().devs.filter(x=>x.id!=${d.id});saveAndRenderNow()">×</button>
       </div>
       ${projRows}
       ${renderMiniCal(d.id)}
@@ -651,18 +643,18 @@ function toggleAbsDay(did,dateStr){
   const abs=getAbsences(dev);
   const i=abs.indexOf(dateStr);
   if(i>=0)abs.splice(i,1);else abs.push(dateStr);
-  saveAndRender();
+  saveAndRenderNow();
 }
 function calPrev(did){const cs=getCalState(did);cs.m--;if(cs.m<0){cs.m=11;cs.y--;}renderDevTab();}
 function calNext(did){const cs=getCalState(did);cs.m++;if(cs.m>11){cs.m=0;cs.y++;}renderDevTab();}
 
-function setHpw(pid,ai,v){const p=projById(pid);if(p&&p.assignments[ai])p.assignments[ai].hpw=v;saveAndRender()}
-function pasgn(pid,ai,k,v){const p=projById(pid);if(p&&p.assignments[ai])p.assignments[ai][k]=v;saveAndRender()}
-function pasgnTotal(pid,ai,v){const p=projById(pid);if(p&&p.assignments[ai])p.assignments[ai].totalHours=v;saveAndRender()}
-function rmAsgn(pid,ai){const p=projById(pid);if(p)p.assignments.splice(ai,1);saveAndRender()}
-function addAsgn(pid){const p=projById(pid);const t=td();if(p)p.assignments.push({devId:t.devs[0]?.id||1,hpw:0,startDate:today(),endDate:addWeeks(today(),4)});saveAndRender()}
-function addDev(){const t=td();t.dc++;const ci=t.devs.length%AVT_BG.length;t.devs.push({id:t.dc,name:'Dev '+t.dc,cap:40,absences:[],color:AVT_BG[ci],ctxt:AVT_TX[ci]});saveAndRender()}
-function addProj(){const t=td();t.pc++;t.projects.push({id:t.pc,name:'Projekt '+t.pc,color:COLORS[t.pc%COLORS.length],deadline:'',totalHours:0,assignments:[{devId:t.devs[0]?.id||1,hpw:0,startDate:today(),endDate:addWeeks(today(),4)}]});saveAndRender()}
+function setHpw(pid,ai,v){const p=projById(pid);if(p&&p.assignments[ai])p.assignments[ai].hpw=v;saveAndRenderNow()}
+function pasgn(pid,ai,k,v){const p=projById(pid);if(p&&p.assignments[ai])p.assignments[ai][k]=v;saveAndRenderNow()}
+function pasgnTotal(pid,ai,v){const p=projById(pid);if(p&&p.assignments[ai])p.assignments[ai].totalHours=v;saveAndRenderNow()}
+function rmAsgn(pid,ai){const p=projById(pid);if(p)p.assignments.splice(ai,1);saveAndRenderNow()}
+function addAsgn(pid){const p=projById(pid);const t=td();if(p)p.assignments.push({devId:t.devs[0]?.id||1,hpw:0,startDate:today(),endDate:addWeeks(today(),4)});saveAndRenderNow()}
+function addDev(){const t=td();t.dc++;const ci=t.devs.length%AVT_BG.length;t.devs.push({id:t.dc,name:'Dev '+t.dc,cap:40,absences:[],color:AVT_BG[ci],ctxt:AVT_TX[ci]});saveAndRenderNow()}
+function addProj(){const t=td();t.pc++;t.projects.push({id:t.pc,name:'Projekt '+t.pc,color:COLORS[t.pc%COLORS.length],deadline:'',totalHours:0,assignments:[{devId:t.devs[0]?.id||1,hpw:0,startDate:today(),endDate:addWeeks(today(),4)}]});saveAndRenderNow()}
 
 function renderAll(){renderGanttTab();renderProjTab();renderDevTab()}
 function saveAndRender(){renderAll();scheduleSave(activeTeam)}
