@@ -7,6 +7,7 @@
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f8f6;color:#1a1a1a;font-size:14px}
+
   .topbar{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 2rem 0;flex-wrap:wrap;gap:10px}
   h1{font-size:20px;font-weight:600;color:#1a1a1a}
   .save-status{font-size:12px;padding:5px 12px;border-radius:6px;transition:opacity .3s}
@@ -15,8 +16,14 @@
   .save-status.error{background:#fef0f0;color:#8a0000;border:1px solid #f0c0c0}
   .save-status.hidden{opacity:0;pointer-events:none}
 
-  .tab-nav{display:flex;gap:0;padding:1.25rem 2rem 0;border-bottom:1px solid #e8e8e4;margin-top:1rem}
-  .tab-btn{padding:10px 22px;font-size:13px;font-weight:500;border:none;background:transparent;color:#888;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
+  .team-bar{display:flex;gap:8px;padding:1.25rem 2rem 0}
+  .team-btn{padding:8px 20px;font-size:13px;font-weight:600;border:1.5px solid #ddd;border-radius:8px;background:#fff;color:#888;cursor:pointer;transition:all .15s}
+  .team-btn:hover{border-color:#aaa;color:#444}
+  .team-btn.active.dotnet{border-color:#378ADD;background:#e6f1fb;color:#0c447c}
+  .team-btn.active.php{border-color:#7F77DD;background:#eeedfe;color:#3c3489}
+
+  .tab-nav{display:flex;padding:1rem 2rem 0;border-bottom:1px solid #e8e8e4;margin-top:.5rem}
+  .tab-btn{padding:9px 20px;font-size:13px;font-weight:500;border:none;background:transparent;color:#888;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
   .tab-btn:hover{color:#444}
   .tab-btn.active{color:#1a1a1a;border-bottom-color:#1a1a1a}
 
@@ -70,7 +77,7 @@
   .util-card{background:#fff;border:1px solid #e8e8e4;border-radius:10px;padding:12px 14px}
   .bar-wrap{height:6px;background:#f0f0ec;border-radius:4px;overflow:hidden;margin:6px 0;border:1px solid #e8e8e4}
   .bar-fill{height:100%;border-radius:4px;transition:width .3s}
-  .alert{font-size:11px;padding:4px 9px;border-radius:5px;margin-top:6px}
+  .alertbox{font-size:11px;padding:4px 9px;border-radius:5px;margin-top:6px}
   .aw{background:#fff8ec;color:#8a5500;border:1px solid #f0d090}
   .ao{background:#f0f8ea;color:#3a6010;border:1px solid #c0dc90}
   .legend{display:flex;gap:14px;margin-bottom:.75rem;flex-wrap:wrap}
@@ -88,106 +95,142 @@
   <h1>Kapazitätsplanung</h1>
   <div style="display:flex;align-items:center;gap:10px">
     <span class="save-status hidden" id="saveStatus"></span>
-    <button class="btn btn-danger" onclick="resetData()">Zurücksetzen</button>
+    <button class="btn btn-danger" onclick="resetTeam()">Zurücksetzen</button>
   </div>
 </div>
 
-<div class="tab-nav">
-  <button class="tab-btn active" onclick="switchTab('gantt')">Gantt</button>
-  <button class="tab-btn" onclick="switchTab('projekte')">Projekte</button>
-  <button class="tab-btn" onclick="switchTab('entwickler')">Entwickler</button>
+<div class="team-bar">
+  <button class="team-btn active dotnet" id="tbtn-dotnet" onclick="switchTeam('dotnet')">.NET</button>
+  <button class="team-btn php" id="tbtn-php" onclick="switchTeam('php')">PHP</button>
 </div>
 
-<div id="tab-gantt" class="tab-content active">
-  <div class="loading">Verbinde mit Datenbank...</div>
+<div class="tab-nav">
+  <button class="tab-btn active" id="tabnav-gantt" onclick="switchTab('gantt')">Gantt</button>
+  <button class="tab-btn" id="tabnav-projekte" onclick="switchTab('projekte')">Projekte</button>
+  <button class="tab-btn" id="tabnav-entwickler" onclick="switchTab('entwickler')">Entwickler</button>
 </div>
+
+<div id="tab-gantt" class="tab-content active"><div class="loading">Verbinde mit Datenbank...</div></div>
 <div id="tab-projekte" class="tab-content"></div>
 <div id="tab-entwickler" class="tab-content"></div>
 
 <script>
-const SUPABASE_URL = 'https://ongnohzbwmyhnfqezjty.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9uZ25vaHpid215aG5mcWV6anR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MjE2NzcsImV4cCI6MjA5MTI5NzY3N30.BklaGJPl2RtOr9RR2DRTYnQPhvHlNj58ITC_XtcxR8Q';
-const API = `${SUPABASE_URL}/rest/v1/kapplan?id=eq.main`;
-const HEADERS = {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Prefer':'return=minimal'};
+const SUPABASE_URL='https://ongnohzbwmyhnfqezjty.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9uZ25vaHpid215aG5mcWV6anR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MjE2NzcsImV4cCI6MjA5MTI5NzY3N30.BklaGJPl2RtOr9RR2DRTYnQPhvHlNj58ITC_XtcxR8Q';
+const HDRS={'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Prefer':'return=minimal'};
+const SBURL=t=>`${SUPABASE_URL}/rest/v1/kapplan?id=eq.${t}`;
 
-const WEEKS=12, KW0=15;
+const WEEKS=12,KW0=15;
 const COLORS=['#378ADD','#1D9E75','#D85A30','#D4537E','#7F77DD','#BA7517','#639922','#185FA5'];
 const AVT_BG=['#dbeeff','#d0f5e8','#fdecd8','#fce4ef','#eae8fd','#fcebd0'];
 const AVT_TX=['#0a4080','#0a5535','#7a3800','#7a1840','#3a2888','#7a4000'];
 
-const DEFAULT={
-  devs:[
-    {id:1,name:'Anna M.',cap:40,blocked:[],color:AVT_BG[0],ctxt:AVT_TX[0]},
-    {id:2,name:'Ben K.',cap:32,blocked:[18,19],color:AVT_BG[1],ctxt:AVT_TX[1]},
-    {id:3,name:'Clara S.',cap:40,blocked:[],color:AVT_BG[2],ctxt:AVT_TX[2]},
-  ],
-  projects:[
-    {id:1,name:'Portal Redesign',color:'#378ADD',assignments:[{devId:1,hpw:20,start:15,dur:6},{devId:3,hpw:12,start:15,dur:4}]},
-    {id:2,name:'API Migration',color:'#1D9E75',assignments:[{devId:2,hpw:24,start:16,dur:4}]},
-    {id:3,name:'Bug Fixing',color:'#D85A30',assignments:[{devId:3,hpw:16,start:15,dur:8}]},
-  ],
-  dc:10,pc:10
+const TEAM_META={
+  dotnet:{label:'.NET',cls:'dotnet'},
+  php:{label:'PHP',cls:'php'}
 };
 
-let activeTab='gantt', ganttView='dev';
-let devs=[], projects=[], dc=10, pc=10, saveTimer=null;
-
-function switchTab(tab){
-  activeTab=tab;
-  document.querySelectorAll('.tab-btn').forEach((b,i)=>{
-    b.className='tab-btn'+((['gantt','projekte','entwickler'][i])===tab?' active':'');
-  });
-  document.querySelectorAll('.tab-content').forEach(el=>el.className='tab-content');
-  document.getElementById('tab-'+tab).className='tab-content active';
+function mkDefault(label){
+  return{
+    devs:[
+      {id:1,name:label+' Dev 1',cap:40,blocked:[],color:AVT_BG[0],ctxt:AVT_TX[0]},
+      {id:2,name:label+' Dev 2',cap:32,blocked:[],color:AVT_BG[1],ctxt:AVT_TX[1]},
+    ],
+    projects:[
+      {id:1,name:'Beispielprojekt',color:'#378ADD',assignments:[{devId:1,hpw:20,start:15,dur:6}]},
+    ],
+    dc:10,pc:10
+  };
 }
 
-async function loadData(){
+// teams holds loaded data per team key
+const teams={dotnet:null,php:null};
+const ganttViews={dotnet:'dev',php:'dev'};
+let activeTeam='dotnet', activeTab='gantt', saveTimers={};
+
+function td(){return teams[activeTeam]}
+function devs(){return td().devs}
+function projs(){return td().projects}
+function devById(id){return devs().find(d=>d.id===id)}
+function projById(id){return projs().find(p=>p.id===id)}
+function devOpts(sel){return devs().map(d=>`<option value="${d.id}"${d.id===sel?' selected':''}>${d.name}</option>`).join('')}
+function kwOpts(sel){return Array.from({length:WEEKS},(_,i)=>KW0+i).map(kw=>`<option value="${kw}"${kw===sel?' selected':''}>KW ${kw}</option>`).join('')}
+function kwList(){return Array.from({length:WEEKS},(_,i)=>KW0+i)}
+function initials(n){return n.split(' ').map(x=>x[0]).join('').toUpperCase().slice(0,2)}
+
+async function loadTeam(team){
   try{
-    const res=await fetch(API,{headers:HEADERS});
+    const res=await fetch(SBURL(team),{headers:HDRS});
     const rows=await res.json();
-    if(!res.ok) throw new Error(rows.message||'Ladefehler');
-    const d=rows.length>0&&Object.keys(rows[0].data).length>0?rows[0].data:DEFAULT;
-    devs=d.devs||DEFAULT.devs;
-    projects=d.projects||DEFAULT.projects;
-    dc=d.dc||10; pc=d.pc||10;
-    renderAll();
+    if(!res.ok) throw new Error(rows.message||'Fehler');
+    const d=rows.length>0&&rows[0].data&&Object.keys(rows[0].data).length>0?rows[0].data:mkDefault(TEAM_META[team].label);
+    teams[team]={devs:d.devs||[],projects:d.projects||[],dc:d.dc||10,pc:d.pc||10};
   }catch(e){
-    document.getElementById('tab-gantt').innerHTML=`<div class="loading" style="color:#e24b4a">Fehler: ${e.message}</div>`;
+    teams[team]=mkDefault(TEAM_META[team].label);
+    showStatus('error','Ladefehler: '+e.message);
   }
 }
 
-function scheduleSave(){
-  clearTimeout(saveTimer);
-  showStatus('saving','Speichert...');
-  saveTimer=setTimeout(doSave,900);
+async function loadAll(){
+  document.getElementById('tab-gantt').innerHTML='<div class="loading">Verbinde mit Datenbank...</div>';
+  await Promise.all([loadTeam('dotnet'),loadTeam('php')]);
+  renderAll();
 }
-async function doSave(){
+
+function scheduleSave(team){
+  clearTimeout(saveTimers[team]);
+  showStatus('saving','Speichert...');
+  saveTimers[team]=setTimeout(()=>doSave(team),900);
+}
+
+async function doSave(team){
+  const d=teams[team];
+  if(!d)return;
   try{
-    const res=await fetch(API,{method:'PATCH',headers:HEADERS,body:JSON.stringify({data:{devs,projects,dc,pc},updated_at:new Date().toISOString()})});
+    const res=await fetch(SBURL(team),{method:'PATCH',headers:HDRS,body:JSON.stringify({data:{devs:d.devs,projects:d.projects,dc:d.dc,pc:d.pc},updated_at:new Date().toISOString()})});
     if(!res.ok){const e=await res.json();throw new Error(e.message||'Fehler')}
     showStatus('saved','Gespeichert');
     setTimeout(()=>showStatus('hidden',''),2000);
   }catch(e){showStatus('error','Fehler: '+e.message)}
 }
-async function resetData(){
-  if(!confirm('Alle Daten auf Beispieldaten zurücksetzen?'))return;
-  devs=[...DEFAULT.devs]; projects=[...DEFAULT.projects]; dc=10; pc=10;
-  await doSave(); renderAll();
+
+async function resetTeam(){
+  if(!confirm(`Team "${TEAM_META[activeTeam].label}" zurücksetzen?`))return;
+  teams[activeTeam]=mkDefault(TEAM_META[activeTeam].label);
+  await doSave(activeTeam);
+  renderAll();
 }
+
 function showStatus(type,msg){const el=document.getElementById('saveStatus');el.className='save-status '+type;el.textContent=msg;}
 
-function initials(n){return n.split(' ').map(x=>x[0]).join('').toUpperCase().slice(0,2)}
-function kwList(){return Array.from({length:WEEKS},(_,i)=>KW0+i)}
-function devById(id){return devs.find(d=>d.id===id)}
-function projById(id){return projects.find(p=>p.id===id)}
-function devOpts(sel){return devs.map(d=>`<option value="${d.id}"${d.id===sel?' selected':''}>${d.name}</option>`).join('')}
-function kwOpts(sel){return kwList().map(kw=>`<option value="${kw}"${kw===sel?' selected':''}>KW ${kw}</option>`).join('')}
+function switchTeam(team){
+  activeTeam=team;
+  Object.keys(TEAM_META).forEach(t=>{
+    const b=document.getElementById('tbtn-'+t);
+    b.className='team-btn'+( t===team?' active '+TEAM_META[t].cls:'');
+  });
+  renderAll();
+}
+
+function switchTab(tab){
+  activeTab=tab;
+  ['gantt','projekte','entwickler'].forEach(t=>{
+    document.getElementById('tabnav-'+t).className='tab-btn'+(t===tab?' active':'');
+    document.getElementById('tab-'+t).className='tab-content'+(t===tab?' active':'');
+  });
+}
+
+function setGanttView(v){
+  ganttViews[activeTeam]=v;
+  renderGanttTab();
+}
 
 function renderGanttTab(){
+  const gv=ganttViews[activeTeam];
   document.getElementById('tab-gantt').innerHTML=`
     <div class="gantt-toggle">
-      <button class="gantt-toggle-btn${ganttView==='dev'?' active':''}" onclick="setGanttView('dev')">Nach Entwickler</button>
-      <button class="gantt-toggle-btn${ganttView==='proj'?' active':''}" onclick="setGanttView('proj')">Nach Projekt</button>
+      <button class="gantt-toggle-btn${gv==='dev'?' active':''}" onclick="setGanttView('dev')">Nach Entwickler</button>
+      <button class="gantt-toggle-btn${gv==='proj'?' active':''}" onclick="setGanttView('proj')">Nach Projekt</button>
     </div>
     <div class="legend"><div class="legend-item"><div class="legend-hatch"></div> Abwesend / blockiert</div></div>
     <div class="gantt-wrap"><div class="gantt" id="gantt"></div></div>
@@ -197,13 +240,9 @@ function renderGanttTab(){
   renderUtil();
 }
 
-function setGanttView(v){
-  ganttView=v;
-  renderGanttTab();
-}
-
 function renderProjTab(){
-  document.getElementById('tab-projekte').innerHTML=projects.map(p=>{
+  const t=td();
+  document.getElementById('tab-projekte').innerHTML=t.projects.map(p=>{
     const aRows=p.assignments.map((a,ai)=>`
       <div class="proj-entry">
         <select onchange="pasgn(${p.id},${ai},'devId',+this.value)">${devOpts(a.devId)}</select>
@@ -214,11 +253,11 @@ function renderProjTab(){
         <span style="font-size:11px;color:#888">Wochen</span>
         <button class="del" onclick="rmAsgn(${p.id},${ai})">×</button>
       </div>`).join('');
-    return `<div class="card">
+    return`<div class="card">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
         <input type="color" value="${p.color}" onchange="projById(${p.id}).color=this.value;renderAll()">
         <input type="text" value="${p.name}" onchange="projById(${p.id}).name=this.value;renderAll()" style="flex:1;width:auto">
-        <button class="del" onclick="projects=projects.filter(x=>x.id!=${p.id});renderAll()">×</button>
+        <button class="del" onclick="td().projects=td().projects.filter(x=>x.id!=${p.id});renderAll()">×</button>
       </div>
       <div style="display:grid;grid-template-columns:30px 1fr 80px 80px 70px 24px;gap:4px;margin-bottom:4px;font-size:11px;color:#888">
         <span></span><span>Entwickler</span><span>Std/Wo</span><span>Start</span><span>Dauer</span><span></span>
@@ -230,12 +269,13 @@ function renderProjTab(){
 }
 
 function renderDevTab(){
-  document.getElementById('tab-entwickler').innerHTML=devs.map(d=>{
+  const t=td();
+  document.getElementById('tab-entwickler').innerHTML=t.devs.map(d=>{
     const kws=kwList().map(kw=>{
       const bl=d.blocked.includes(kw);
-      return `<button class="kw-btn${bl?' blocked':''}" onclick="toggleBlock(${d.id},${kw})">KW ${kw}</button>`;
+      return`<button class="kw-btn${bl?' blocked':''}" onclick="toggleBlock(${d.id},${kw})">KW ${kw}</button>`;
     }).join('');
-    return `<div class="card">
+    return`<div class="card">
       <div class="dev-header">
         <div class="avatar" style="background:${d.color};color:${d.ctxt}">${initials(d.name)}</div>
         <input type="text" value="${d.name}" onchange="devById(${d.id}).name=this.value;renderAll()">
@@ -244,7 +284,7 @@ function renderDevTab(){
           <input type="number" min="1" max="60" value="${d.cap}" onchange="devById(${d.id}).cap=+this.value;renderAll()">
           <span style="font-size:12px;color:#888">Std/Wo</span>
         </div>
-        <button class="del" onclick="devs=devs.filter(x=>x.id!=${d.id});renderAll()">×</button>
+        <button class="del" onclick="td().devs=td().devs.filter(x=>x.id!=${d.id});renderAll()">×</button>
       </div>
       <div style="font-size:12px;color:#888;margin-bottom:5px">Wochen blockieren (Urlaub / Abwesenheit):</div>
       <div class="block-grid">${kws}</div>
@@ -272,7 +312,7 @@ function drow(cols,label,weeks,start,dur,color,rlabel,blocked){
   }).join('');
   return`<div class="g-row" style="grid-template-columns:${cols}"><div class="g-lbl">${label}</div>${cells}</div>`;
 }
-function ganttByDev(g){
+function ganttByDev(g,devs,projects){
   let h=hdr(g.cols,g.weeks);
   devs.forEach(dev=>{
     h+=`<div class="g-sep"><div class="g-sep-dot" style="background:${dev.color}"></div>${dev.name}<span style="font-weight:400;color:#aaa;margin-left:4px">${dev.cap} Std/Wo</span></div>`;
@@ -284,13 +324,13 @@ function ganttByDev(g){
   });
   return h;
 }
-function ganttByProj(g){
+function ganttByProj(g,devs,projects){
   let h=hdr(g.cols,g.weeks);
   projects.forEach(proj=>{
     h+=`<div class="g-sep"><div class="g-sep-dot" style="background:${proj.color}"></div>${proj.name}</div>`;
     if(!proj.assignments.length){h+=`<div class="g-row" style="grid-template-columns:${g.cols}"><div class="g-lbl" style="font-style:italic;color:#bbb">keine Zuweisung</div>${g.weeks.map(()=>'<div class="g-cell"></div>').join('')}</div>`;return;}
     proj.assignments.forEach(a=>{
-      const dev=devById(a.devId);if(!dev)return;
+      const dev=devs.find(d=>d.id===a.devId);if(!dev)return;
       const lbl=`<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:${dev.color};display:inline-block"></span>${dev.name}</span>`;
       h+=drow(g.cols,lbl,g.weeks,a.start,a.dur,proj.color,dev.name+' ('+a.hpw+'h)',dev.blocked);
     });
@@ -299,15 +339,18 @@ function ganttByProj(g){
 }
 function renderGantt(){
   const g=buildGrid();
-  document.getElementById('gantt').innerHTML=ganttView==='dev'?ganttByDev(g):ganttByProj(g);
+  const gv=ganttViews[activeTeam];
+  const d=td();
+  document.getElementById('gantt').innerHTML=gv==='dev'?ganttByDev(g,d.devs,d.projects):ganttByProj(g,d.devs,d.projects);
 }
 function renderUtil(){
   const weeks=kwList();
-  document.getElementById('utilGrid').innerHTML=devs.map(dev=>{
+  const d=td();
+  document.getElementById('utilGrid').innerHTML=d.devs.map(dev=>{
     const wd=weeks.map(kw=>{
       if(dev.blocked.includes(kw))return{kw,load:0,blocked:true};
       let load=0;
-      projects.forEach(p=>p.assignments.filter(a=>a.devId===dev.id).forEach(a=>{if(kw>=a.start&&kw<a.start+a.dur)load+=a.hpw}));
+      d.projects.forEach(p=>p.assignments.filter(a=>a.devId===dev.id).forEach(a=>{if(kw>=a.start&&kw<a.start+a.dur)load+=a.hpw}));
       return{kw,load,blocked:false};
     });
     const active=wd.filter(w=>!w.blocked&&w.load>0);
@@ -327,26 +370,26 @@ function renderUtil(){
         <span>Ø ${avg} Std/Wo</span><span style="font-weight:600;color:${col}">${pct}%</span>
       </div>
       <div style="font-size:11px;color:#aaa;margin-top:3px">Max ${max} Std · ${blCnt} Wo blockiert</div>
-      ${overKW?`<div class="alert aw">Überlastung ab KW ${overKW.kw}</div>`:`<div class="alert ao">Auslastung im grünen Bereich</div>`}
+      ${overKW?`<div class="alertbox aw">Überlastung ab KW ${overKW.kw}</div>`:`<div class="alertbox ao">Auslastung im grünen Bereich</div>`}
     </div>`;
   }).join('');
 }
 
 function pasgn(pid,ai,k,v){const p=projById(pid);if(p&&p.assignments[ai])p.assignments[ai][k]=v;renderAll()}
 function rmAsgn(pid,ai){const p=projById(pid);if(p)p.assignments.splice(ai,1);renderAll()}
-function addAsgn(pid){const p=projById(pid);if(p)p.assignments.push({devId:devs[0]?.id||1,hpw:8,start:KW0,dur:4});renderAll()}
+function addAsgn(pid){const p=projById(pid);if(p)p.assignments.push({devId:devs()[0]?.id||1,hpw:8,start:KW0,dur:4});renderAll()}
 function toggleBlock(did,kw){const d=devById(did);if(!d)return;const i=d.blocked.indexOf(kw);if(i>=0)d.blocked.splice(i,1);else d.blocked.push(kw);renderAll()}
-function addDev(){dc++;const ci=devs.length%AVT_BG.length;devs.push({id:dc,name:'Dev '+dc,cap:40,blocked:[],color:AVT_BG[ci],ctxt:AVT_TX[ci]});renderAll()}
-function addProj(){pc++;projects.push({id:pc,name:'Projekt '+pc,color:COLORS[pc%COLORS.length],assignments:[{devId:devs[0]?.id||1,hpw:8,start:KW0,dur:4}]});renderAll()}
+function addDev(){const t=td();t.dc++;const ci=t.devs.length%AVT_BG.length;t.devs.push({id:t.dc,name:'Dev '+t.dc,cap:40,blocked:[],color:AVT_BG[ci],ctxt:AVT_TX[ci]});renderAll()}
+function addProj(){const t=td();t.pc++;t.projects.push({id:t.pc,name:'Projekt '+t.pc,color:COLORS[t.pc%COLORS.length],assignments:[{devId:t.devs[0]?.id||1,hpw:8,start:KW0,dur:4}]});renderAll()}
 
 function renderAll(){
   renderGanttTab();
   renderProjTab();
   renderDevTab();
-  scheduleSave();
+  scheduleSave(activeTeam);
 }
 
-loadData();
+loadAll();
 </script>
 </body>
 </html>
