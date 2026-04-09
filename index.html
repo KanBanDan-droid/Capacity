@@ -7,35 +7,31 @@
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f8f6;color:#1a1a1a;font-size:14px}
-
   .topbar{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 2rem 0;flex-wrap:wrap;gap:10px}
-  h1{font-size:20px;font-weight:600;color:#1a1a1a}
+  h1{font-size:20px;font-weight:600}
   .save-status{font-size:12px;padding:5px 12px;border-radius:6px;transition:opacity .3s}
   .save-status.saved{background:#f0f8ea;color:#3a6010;border:1px solid #c0dc90}
   .save-status.saving{background:#fff8ec;color:#8a5500;border:1px solid #f0d090}
   .save-status.error{background:#fef0f0;color:#8a0000;border:1px solid #f0c0c0}
   .save-status.hidden{opacity:0;pointer-events:none}
-
   .team-bar{display:flex;gap:8px;padding:1.25rem 2rem 0}
   .team-btn{padding:8px 20px;font-size:13px;font-weight:600;border:1.5px solid #ddd;border-radius:8px;background:#fff;color:#888;cursor:pointer;transition:all .15s}
   .team-btn:hover{border-color:#aaa;color:#444}
   .team-btn.active.dotnet{border-color:#378ADD;background:#e6f1fb;color:#0c447c}
   .team-btn.active.php{border-color:#7F77DD;background:#eeedfe;color:#3c3489}
-
   .tab-nav{display:flex;padding:1rem 2rem 0;border-bottom:1px solid #e8e8e4;margin-top:.5rem}
   .tab-btn{padding:9px 20px;font-size:13px;font-weight:500;border:none;background:transparent;color:#888;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
   .tab-btn:hover{color:#444}
   .tab-btn.active{color:#1a1a1a;border-bottom-color:#1a1a1a}
-
   .tab-content{display:none;padding:1.5rem 2rem 2rem}
   .tab-content.active{display:block}
-
   .sec{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.06em;margin:1.5rem 0 .75rem}
   .sec:first-child{margin-top:0}
   .card{background:#fff;border:1px solid #e8e8e4;border-radius:10px;padding:14px 16px;margin-bottom:10px}
   input,select{padding:5px 9px;font-size:13px;border:1px solid #ddd;border-radius:6px;background:#fafaf8;color:#1a1a1a;outline:none}
   input:focus,select:focus{border-color:#aaa;background:#fff}
   input[type=number]{width:68px}
+  input[type=date]{width:140px}
   input[type=color]{width:34px;height:30px;padding:2px;cursor:pointer;border-radius:4px}
   input[type=text]{width:140px}
   .btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;font-size:12px;border:1px solid #ddd;border-radius:7px;background:#fff;color:#444;cursor:pointer;transition:background .15s}
@@ -48,30 +44,54 @@
   .dev-header input[type=text]{font-size:14px;font-weight:600;background:transparent;border-color:transparent;width:160px}
   .dev-header input[type=text]:hover,.dev-header input[type=text]:focus{background:#fafaf8;border-color:#ddd}
   .avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
-  .block-grid{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
-  .kw-btn{padding:3px 8px;font-size:11px;border:1px solid #e0e0da;border-radius:4px;cursor:pointer;background:#fafaf8;color:#888;transition:all .15s}
-  .kw-btn:hover{border-color:#ccc;color:#444}
-  .kw-btn.blocked{background:#fff8ec;border-color:#f0a040;color:#8a5500;font-weight:500}
   .proj-entry{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0;border-top:1px solid #f0f0ec}
   .proj-entry:first-child{border-top:none;padding-top:0}
+  .deadline-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
+  .deadline-ok{background:#f0f8ea;color:#3a6010;border:1px solid #c0dc90}
+  .deadline-soon{background:#fff8ec;color:#8a5500;border:1px solid #f0d090}
+  .deadline-over{background:#fef0f0;color:#8a0000;border:1px solid #f0c0c0}
 
+  /* Gantt */
   .gantt-wrap{overflow-x:auto;margin-bottom:1.5rem}
-  .gantt{min-width:520px}
   .g-hdr{display:grid;margin-bottom:3px}
-  .g-row{display:grid;align-items:center;margin-bottom:4px}
+  .g-row{display:grid;align-items:center;margin-bottom:3px}
   .g-lbl{font-size:11px;color:#888;padding-right:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .g-wk-hdr{font-size:10px;color:#aaa;text-align:center;border-left:1px solid #eee;padding:2px 0}
-  .g-cell{height:22px;border-left:1px solid #f0f0ec}
-  .g-block{height:22px;border-radius:3px;display:flex;align-items:center;padding:0 6px;font-size:10px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .g-wk-hdr{font-size:9px;color:#666;text-align:center;border-left:1px solid #eee;padding:3px 2px;line-height:1.4;overflow:hidden;background:#fafaf8}
+  .g-wk-hdr .wk-mo{font-weight:600;color:#444}
+  .g-wk-hdr .wk-fr{color:#888}
+  .g-cell{height:22px;border-left:1px solid #f0f0ec;position:relative}
+  .g-block{height:22px;border-radius:3px;display:flex;align-items:center;padding:0 5px;font-size:10px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .g-off{height:22px;background:repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(0,0,0,.06) 3px,rgba(0,0,0,.06) 6px);border-radius:3px}
-  .g-sep{font-size:11px;font-weight:600;color:#444;padding:10px 0 4px;border-bottom:1px solid #e4e4e0;margin-bottom:5px;display:flex;align-items:center;gap:7px}
+  .g-deadline{position:absolute;top:0;bottom:0;width:2px;background:#e24b4a;z-index:2}
+  .g-deadline-lbl{position:absolute;top:-14px;font-size:9px;color:#e24b4a;font-weight:600;white-space:nowrap;transform:translateX(-50%)}
+  .g-sep{font-size:11px;font-weight:600;color:#444;padding:10px 0 4px;border-bottom:1px solid #e4e4e0;margin-bottom:4px;display:flex;align-items:center;gap:7px}
   .g-sep-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-
   .gantt-toggle{display:flex;border:1px solid #ddd;border-radius:7px;overflow:hidden;width:fit-content;margin-bottom:1rem}
   .gantt-toggle-btn{padding:7px 18px;font-size:12px;border:none;border-right:1px solid #ddd;background:#fff;color:#666;cursor:pointer;transition:all .15s}
   .gantt-toggle-btn:last-child{border-right:none}
   .gantt-toggle-btn.active{background:#1a1a1a;color:#fff}
   .gantt-toggle-btn:hover:not(.active){background:#f0f0ec}
+  .range-row{display:flex;align-items:center;gap:8px;margin-bottom:1rem;flex-wrap:wrap}
+
+  /* Mini calendar for absence */
+  .absence-section{margin-top:10px}
+  .absence-section>label{font-size:12px;color:#888;display:block;margin-bottom:6px}
+  .cal-nav{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .cal-nav button{background:none;border:1px solid #ddd;border-radius:5px;padding:2px 8px;cursor:pointer;font-size:12px;color:#666}
+  .cal-nav button:hover{background:#f0f0ec}
+  .cal-nav span{font-size:12px;font-weight:600;color:#444;min-width:100px;text-align:center}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;max-width:260px}
+  .cal-day-hdr{font-size:10px;color:#aaa;text-align:center;padding:2px 0;font-weight:600}
+  .cal-day{font-size:11px;text-align:center;padding:3px 2px;border-radius:4px;cursor:pointer;border:1px solid transparent;min-width:32px;line-height:1.4}
+  .cal-day:hover:not(.cal-other):not(.cal-weekend){background:#f0f0ec;border-color:#ddd}
+  .cal-day.cal-blocked{background:#fff8ec;border-color:#f0a040;color:#8a5500;font-weight:600}
+  .cal-day.cal-weekend{color:#ddd;cursor:default}
+  .cal-day.cal-other{color:#ddd;cursor:default}
+  .cal-day.cal-today{border-color:#378ADD;color:#0c447c;font-weight:600}
+  .absence-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+  .absence-tag{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;background:#fff8ec;border:1px solid #f0a040;border-radius:4px;font-size:11px;color:#8a5500}
+  .absence-tag button{background:none;border:none;cursor:pointer;color:#f0a040;font-size:13px;line-height:1;padding:0 0 0 2px}
+  .absence-tag button:hover{color:#e24b4a}
 
   .util-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
   .util-card{background:#fff;border:1px solid #e8e8e4;border-radius:10px;padding:12px 14px}
@@ -80,13 +100,15 @@
   .alertbox{font-size:11px;padding:4px 9px;border-radius:5px;margin-top:6px}
   .aw{background:#fff8ec;color:#8a5500;border:1px solid #f0d090}
   .ao{background:#f0f8ea;color:#3a6010;border:1px solid #c0dc90}
-  .legend{display:flex;gap:14px;margin-bottom:.75rem;flex-wrap:wrap}
+  .legend{display:flex;gap:14px;margin-bottom:.75rem;flex-wrap:wrap;align-items:center}
   .legend-item{display:flex;align-items:center;gap:5px;font-size:12px;color:#888}
   .legend-hatch{width:14px;height:14px;border-radius:3px;background:repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(0,0,0,.1) 3px,rgba(0,0,0,.1) 6px);border:1px solid #ddd}
+  .legend-deadline{width:2px;height:14px;background:#e24b4a}
   .loading{text-align:center;padding:4rem;color:#aaa;font-size:14px}
   .row{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
   .row:last-child{margin-bottom:0}
   .lbl{font-size:12px;color:#888;min-width:80px}
+  .field-lbl{font-size:11px;color:#888}
 </style>
 </head>
 <body>
@@ -101,7 +123,7 @@
 
 <div class="team-bar">
   <button class="team-btn active dotnet" id="tbtn-dotnet" onclick="switchTeam('dotnet')">.NET</button>
-  <button class="team-btn php" id="tbtn-php" onclick="switchTeam('php')">PHP</button>
+  <button class="team-btn" id="tbtn-php" onclick="switchTeam('php')">PHP</button>
 </div>
 
 <div class="tab-nav">
@@ -120,98 +142,118 @@ const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 const HDRS={'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Prefer':'return=minimal'};
 const SBURL=t=>`${SUPABASE_URL}/rest/v1/kapplan?id=eq.${t}`;
 
-const WEEKS=12,KW0=15;
 const COLORS=['#378ADD','#1D9E75','#D85A30','#D4537E','#7F77DD','#BA7517','#639922','#185FA5'];
 const AVT_BG=['#dbeeff','#d0f5e8','#fdecd8','#fce4ef','#eae8fd','#fcebd0'];
 const AVT_TX=['#0a4080','#0a5535','#7a3800','#7a1840','#3a2888','#7a4000'];
+const TEAM_META={dotnet:{label:'.NET',cls:'dotnet'},php:{label:'PHP',cls:'php'}};
+const DAY_NAMES=['Mo','Di','Mi','Do','Fr','Sa','So'];
 
-const TEAM_META={
-  dotnet:{label:'.NET',cls:'dotnet'},
-  php:{label:'PHP',cls:'php'}
-};
+// ---- Date helpers (all dates as YYYY-MM-DD strings) ----
+function today(){return toStr(new Date())}
+function toStr(d){return d.toISOString().slice(0,10)}
+function fromStr(s){const[y,m,d]=s.split('-');return new Date(+y,+m-1,+d)}
+function addDays(s,n){const d=fromStr(s);d.setDate(d.getDate()+n);return toStr(d)}
+function addWeeks(s,n){return addDays(s,n*7)}
+function diffDays(a,b){return Math.round((fromStr(b)-fromStr(a))/86400000)}
+// Mo dd.MM – returns "Mo 07.04."
+function fmtMo(s){const d=fromStr(s);return d.getDate()+'.'+(d.getMonth()+1)+'.'}
+// Fr dd.MM
+function fmtFr(s){return fmtMo(addDays(s,4))}
+function fmtFull(s){return fromStr(s).toLocaleDateString('de-AT',{day:'2-digit',month:'2-digit',year:'numeric'})}
+function fmtMonthYear(y,m){return['Jän','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'][m]+' '+y}
+// Monday of the week containing s
+function weekStart(s){const d=fromStr(s);const day=d.getDay();d.setDate(d.getDate()-(day===0?6:day-1));return toStr(d)}
+function weeksBetween(a,b){const w=[];let c=weekStart(a);while(c<=b){w.push(c);c=addWeeks(c,1);}return w}
+// Is date s a weekday (Mon-Fri)?
+function isWeekday(s){const d=fromStr(s).getDay();return d>=1&&d<=5}
+
+// ---- Calendar state per developer (month nav) ----
+const calState={};
+function getCalState(did){
+  if(!calState[did]){const n=new Date();calState[did]={y:n.getFullYear(),m:n.getMonth()}}
+  return calState[did];
+}
 
 function mkDefault(label){
+  const s=addWeeks(today(),1);
   return{
     devs:[
-      {id:1,name:label+' Dev 1',cap:40,blocked:[],color:AVT_BG[0],ctxt:AVT_TX[0]},
-      {id:2,name:label+' Dev 2',cap:32,blocked:[],color:AVT_BG[1],ctxt:AVT_TX[1]},
+      {id:1,name:label+' Dev 1',cap:40,absences:[],color:AVT_BG[0],ctxt:AVT_TX[0]},
+      {id:2,name:label+' Dev 2',cap:32,absences:[],color:AVT_BG[1],ctxt:AVT_TX[1]},
     ],
     projects:[
-      {id:1,name:'Beispielprojekt',color:'#378ADD',assignments:[{devId:1,hpw:20,start:15,dur:6}]},
+      {id:1,name:'Beispielprojekt',color:'#378ADD',deadline:'',
+       assignments:[{devId:1,hpw:20,startDate:s,endDate:addWeeks(s,6)}]},
     ],
-    dc:10,pc:10
+    dc:10,pc:10,
+    ganttStart:today(),
+    ganttEnd:addWeeks(today(),12)
   };
 }
 
-// teams holds loaded data per team key
 const teams={dotnet:null,php:null};
 const ganttViews={dotnet:'dev',php:'dev'};
-let activeTeam='dotnet', activeTab='gantt', saveTimers={};
+let activeTeam='dotnet',activeTab='gantt',saveTimers={};
 
 function td(){return teams[activeTeam]}
-function devs(){return td().devs}
-function projs(){return td().projects}
-function devById(id){return devs().find(d=>d.id===id)}
-function projById(id){return projs().find(p=>p.id===id)}
-function devOpts(sel){return devs().map(d=>`<option value="${d.id}"${d.id===sel?' selected':''}>${d.name}</option>`).join('')}
-function kwOpts(sel){return Array.from({length:WEEKS},(_,i)=>KW0+i).map(kw=>`<option value="${kw}"${kw===sel?' selected':''}>KW ${kw}</option>`).join('')}
-function kwList(){return Array.from({length:WEEKS},(_,i)=>KW0+i)}
+function devById(id){return td().devs.find(d=>d.id===id)}
+function projById(id){return td().projects.find(p=>p.id===id)}
+function devOpts(sel){return td().devs.map(d=>`<option value="${d.id}"${d.id===sel?' selected':''}>${d.name}</option>`).join('')}
 function initials(n){return n.split(' ').map(x=>x[0]).join('').toUpperCase().slice(0,2)}
+// absences stored as array of "YYYY-MM-DD" individual days
+function getAbsences(dev){return dev.absences||(dev.absences=[])}
 
 async function loadTeam(team){
   try{
     const res=await fetch(SBURL(team),{headers:HDRS});
     const rows=await res.json();
-    if(!res.ok) throw new Error(rows.message||'Fehler');
+    if(!res.ok)throw new Error(rows.message||'Fehler');
     const d=rows.length>0&&rows[0].data&&Object.keys(rows[0].data).length>0?rows[0].data:mkDefault(TEAM_META[team].label);
-    teams[team]={devs:d.devs||[],projects:d.projects||[],dc:d.dc||10,pc:d.pc||10};
+    if(!d.ganttStart)d.ganttStart=today();
+    if(!d.ganttEnd)d.ganttEnd=addWeeks(today(),12);
+    // migrate old "blocked" weeks → absences
+    d.devs.forEach(dev=>{
+      if(!dev.absences)dev.absences=[];
+      if(dev.blocked&&dev.blocked.length){
+        dev.blocked.forEach(ws=>{
+          for(let i=0;i<5;i++){const day=addDays(ws,i);if(!dev.absences.includes(day))dev.absences.push(day);}
+        });
+        delete dev.blocked;
+      }
+    });
+    teams[team]=d;
   }catch(e){
     teams[team]=mkDefault(TEAM_META[team].label);
     showStatus('error','Ladefehler: '+e.message);
   }
 }
-
 async function loadAll(){
   document.getElementById('tab-gantt').innerHTML='<div class="loading">Verbinde mit Datenbank...</div>';
   await Promise.all([loadTeam('dotnet'),loadTeam('php')]);
   renderAll();
 }
-
-function scheduleSave(team){
-  clearTimeout(saveTimers[team]);
-  showStatus('saving','Speichert...');
-  saveTimers[team]=setTimeout(()=>doSave(team),900);
-}
-
+function scheduleSave(team){clearTimeout(saveTimers[team]);showStatus('saving','Speichert...');saveTimers[team]=setTimeout(()=>doSave(team),900)}
 async function doSave(team){
-  const d=teams[team];
-  if(!d)return;
   try{
-    const res=await fetch(SBURL(team),{method:'PATCH',headers:HDRS,body:JSON.stringify({data:{devs:d.devs,projects:d.projects,dc:d.dc,pc:d.pc},updated_at:new Date().toISOString()})});
+    const res=await fetch(SBURL(team),{method:'PATCH',headers:HDRS,body:JSON.stringify({data:teams[team],updated_at:new Date().toISOString()})});
     if(!res.ok){const e=await res.json();throw new Error(e.message||'Fehler')}
-    showStatus('saved','Gespeichert');
-    setTimeout(()=>showStatus('hidden',''),2000);
+    showStatus('saved','Gespeichert');setTimeout(()=>showStatus('hidden',''),2000);
   }catch(e){showStatus('error','Fehler: '+e.message)}
 }
-
 async function resetTeam(){
   if(!confirm(`Team "${TEAM_META[activeTeam].label}" zurücksetzen?`))return;
   teams[activeTeam]=mkDefault(TEAM_META[activeTeam].label);
-  await doSave(activeTeam);
-  renderAll();
+  await doSave(activeTeam);renderAll();
 }
-
-function showStatus(type,msg){const el=document.getElementById('saveStatus');el.className='save-status '+type;el.textContent=msg;}
+function showStatus(t,m){const el=document.getElementById('saveStatus');el.className='save-status '+t;el.textContent=m;}
 
 function switchTeam(team){
   activeTeam=team;
   Object.keys(TEAM_META).forEach(t=>{
-    const b=document.getElementById('tbtn-'+t);
-    b.className='team-btn'+( t===team?' active '+TEAM_META[t].cls:'');
+    document.getElementById('tbtn-'+t).className='team-btn'+(t===team?' active '+TEAM_META[t].cls:'');
   });
   renderAll();
 }
-
 function switchTab(tab){
   activeTab=tab;
   ['gantt','projekte','entwickler'].forEach(t=>{
@@ -219,27 +261,166 @@ function switchTab(tab){
     document.getElementById('tab-'+t).className='tab-content'+(t===tab?' active':'');
   });
 }
+function setGanttView(v){ganttViews[activeTeam]=v;renderGanttTab();}
 
-function setGanttView(v){
-  ganttViews[activeTeam]=v;
-  renderGanttTab();
-}
-
+// ---- Gantt ----
 function renderGanttTab(){
   const gv=ganttViews[activeTeam];
+  const d=td();
   document.getElementById('tab-gantt').innerHTML=`
+    <div class="range-row">
+      <span class="field-lbl">Zeitraum:</span>
+      <input type="date" value="${d.ganttStart}" onchange="td().ganttStart=this.value;renderGanttTab();scheduleSave(activeTeam)">
+      <span class="field-lbl">bis</span>
+      <input type="date" value="${d.ganttEnd}" onchange="td().ganttEnd=this.value;renderGanttTab();scheduleSave(activeTeam)">
+    </div>
     <div class="gantt-toggle">
       <button class="gantt-toggle-btn${gv==='dev'?' active':''}" onclick="setGanttView('dev')">Nach Entwickler</button>
       <button class="gantt-toggle-btn${gv==='proj'?' active':''}" onclick="setGanttView('proj')">Nach Projekt</button>
     </div>
-    <div class="legend"><div class="legend-item"><div class="legend-hatch"></div> Abwesend / blockiert</div></div>
-    <div class="gantt-wrap"><div class="gantt" id="gantt"></div></div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-hatch"></div> Abwesend</div>
+      <div class="legend-item"><div class="legend-deadline"></div> Deadline</div>
+    </div>
+    <div class="gantt-wrap"><div id="gantt"></div></div>
     <div class="sec">Auslastung</div>
     <div class="util-grid" id="utilGrid"></div>`;
   renderGantt();
   renderUtil();
 }
 
+function buildGrid(){
+  const d=td();
+  const weeks=weeksBetween(d.ganttStart,d.ganttEnd);
+  const labelW=130;
+  const availW=Math.max(600,window.innerWidth-80)-labelW;
+  const cw=Math.max(56,Math.floor(availW/weeks.length));
+  return{weeks,cw,cols:`${labelW}px ${weeks.map(()=>cw+'px').join(' ')}`,labelW};
+}
+
+function hdr(g){
+  return`<div class="g-hdr" style="grid-template-columns:${g.cols}">
+    <div></div>
+    ${g.weeks.map(w=>`<div class="g-wk-hdr">
+      <div class="wk-mo">Mo ${fmtMo(w)}</div>
+      <div class="wk-fr">Fr ${fmtFr(w)}</div>
+    </div>`).join('')}
+  </div>`;
+}
+
+// Check if a week has any absence day (Mon-Fri)
+function weekHasAbsence(wStart,absences){
+  for(let i=0;i<5;i++){if(absences.includes(addDays(wStart,i)))return true;}
+  return false;
+}
+// Fraction of weekdays absent in week (0-1)
+function absenceFraction(wStart,absences){
+  let n=0;for(let i=0;i<5;i++){if(absences.includes(addDays(wStart,i)))n++;}
+  return n/5;
+}
+
+function drow(g,label,startDate,endDate,color,rlabel,absences,deadlineDate){
+  const cells=g.weeks.map((wStart,i)=>{
+    const wEnd=addDays(wStart,6);
+    const frac=absenceFraction(wStart,absences||[]);
+    const hasAbs=frac>0;
+    const overlap=startDate<=wEnd&&endDate>=wStart;
+    const dlInWeek=deadlineDate&&deadlineDate>=wStart&&deadlineDate<=wEnd;
+    let dlStyle='';
+    if(dlInWeek){
+      const off=Math.max(0,diffDays(wStart,deadlineDate));
+      const pct=Math.min(100,Math.round(off/7*100));
+      dlStyle=`<div class="g-deadline" style="left:${pct}%"><div class="g-deadline-lbl">${fmtMo(deadlineDate)}</div></div>`;
+    }
+    if(overlap){
+      if(frac===1)return`<div class="g-cell">${dlStyle}<div class="g-off"></div></div>`;
+      // partial absence: show striped overlay on top of block
+      const stripePct=Math.round(frac*100);
+      const partial=frac>0?`<div style="position:absolute;top:0;right:0;bottom:0;width:${stripePct}%;background:repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(0,0,0,.08) 3px,rgba(0,0,0,.08) 6px);border-radius:0 3px 3px 0"></div>`:'';
+      const isFirst=startDate>=wStart&&startDate<=wEnd;
+      return`<div class="g-cell">${dlStyle}<div class="g-block" style="background:${color}28;border:1.5px solid ${color};color:${color}">${isFirst?rlabel:''}</div>${partial}</div>`;
+    }
+    return`<div class="g-cell">${dlStyle}${hasAbs?`<div class="g-off" style="opacity:${frac}"></div>`:''}</div>`;
+  }).join('');
+  return`<div class="g-row" style="grid-template-columns:${g.cols}"><div class="g-lbl">${label}</div>${cells}</div>`;
+}
+
+function ganttByDev(g,devs,projects){
+  let h=hdr(g);
+  devs.forEach(dev=>{
+    h+=`<div class="g-sep"><div class="g-sep-dot" style="background:${dev.color}"></div>${dev.name}<span style="font-weight:400;color:#aaa;margin-left:4px">${dev.cap} Std/Wo</span></div>`;
+    const dp=projects.filter(p=>p.assignments.some(a=>a.devId===dev.id));
+    if(!dp.length){h+=`<div class="g-row" style="grid-template-columns:${g.cols}"><div class="g-lbl"><i style="color:#bbb">keine Projekte</i></div>${g.weeks.map(w=>`<div class="g-cell">${weekHasAbsence(w,dev.absences)?'<div class="g-off"></div>':''}</div>`).join('')}</div>`;return;}
+    dp.forEach(proj=>proj.assignments.filter(a=>a.devId===dev.id).forEach(a=>{
+      h+=drow(g,proj.name,a.startDate,a.endDate,proj.color,proj.name+' ('+a.hpw+'h)',dev.absences,proj.deadline||null);
+    }));
+  });
+  return h;
+}
+function ganttByProj(g,devs,projects){
+  let h=hdr(g);
+  projects.forEach(proj=>{
+    const dlBadge=proj.deadline?` <span style="font-size:10px;color:#e24b4a;font-weight:400">Deadline: ${fmtFull(proj.deadline)}</span>`:'';
+    h+=`<div class="g-sep"><div class="g-sep-dot" style="background:${proj.color}"></div>${proj.name}${dlBadge}</div>`;
+    if(!proj.assignments.length){h+=`<div class="g-row" style="grid-template-columns:${g.cols}"><div class="g-lbl" style="font-style:italic;color:#bbb">keine Zuweisung</div>${g.weeks.map(()=>'<div class="g-cell"></div>').join('')}</div>`;return;}
+    proj.assignments.forEach(a=>{
+      const dev=devs.find(d=>d.id===a.devId);if(!dev)return;
+      const lbl=`<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:${dev.color};display:inline-block"></span>${dev.name}</span>`;
+      h+=drow(g,lbl,a.startDate,a.endDate,proj.color,dev.name+' ('+a.hpw+'h)',dev.absences,proj.deadline||null);
+    });
+  });
+  return h;
+}
+function renderGantt(){
+  const g=buildGrid();const d=td();
+  document.getElementById('gantt').innerHTML=ganttViews[activeTeam]==='dev'?ganttByDev(g,d.devs,d.projects):ganttByProj(g,d.devs,d.projects);
+}
+
+// ---- Util ----
+function renderUtil(){
+  const d=td();
+  const weeks=weeksBetween(d.ganttStart,d.ganttEnd);
+  document.getElementById('utilGrid').innerHTML=d.devs.map(dev=>{
+    const abs=getAbsences(dev);
+    const wd=weeks.map(wStart=>{
+      const frac=absenceFraction(wStart,abs);
+      if(frac===1)return{load:0,blocked:true};
+      const wEnd=addDays(wStart,6);
+      let load=0;
+      d.projects.forEach(p=>p.assignments.filter(a=>a.devId===dev.id).forEach(a=>{
+        if(a.startDate<=wEnd&&a.endDate>=wStart)load+=Math.round(a.hpw*(1-frac));
+      }));
+      return{load,blocked:false};
+    });
+    const active=wd.filter(w=>!w.blocked&&w.load>0);
+    const avg=active.length?Math.round(active.reduce((s,w)=>s+w.load,0)/active.length):0;
+    const max=Math.max(...wd.map(w=>w.load),0);
+    const pct=dev.cap>0?Math.min(Math.round(avg/dev.cap*100),200):0;
+    const col=pct>100?'#e24b4a':pct>80?'#f0a030':'#3a9e60';
+    const absCnt=abs.filter(d=>d>=td().ganttStart&&d<=td().ganttEnd).length;
+    return`<div class="util-card">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <div class="avatar" style="background:${dev.color};color:${dev.ctxt};width:28px;height:28px;font-size:10px;flex-shrink:0">${initials(dev.name)}</div>
+        <span style="font-size:13px;font-weight:600">${dev.name}</span>
+      </div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:${Math.min(pct,100)}%;background:${col}"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:#888">
+        <span>Ø ${avg} Std/Wo</span><span style="font-weight:600;color:${col}">${pct}%</span>
+      </div>
+      <div style="font-size:11px;color:#aaa;margin-top:3px">Max ${max} Std · ${absCnt} Abwesenheitstage</div>
+      ${wd.some(w=>!w.blocked&&w.load>dev.cap)?`<div class="alertbox aw">Überlastung in mind. einer Woche</div>`:`<div class="alertbox ao">Auslastung im grünen Bereich</div>`}
+    </div>`;
+  }).join('');
+}
+
+// ---- Projekte Tab ----
+function deadlineBadge(dl){
+  if(!dl)return'';
+  const diff=diffDays(today(),dl);
+  const cls=diff<0?'deadline-over':diff<=14?'deadline-soon':'deadline-ok';
+  const txt=diff<0?`${Math.abs(diff)}d überfällig`:diff===0?'heute':diff<=14?`${diff}d verbleibend`:fmtFull(dl);
+  return`<span class="deadline-badge ${cls}">${txt}</span>`;
+}
 function renderProjTab(){
   const t=td();
   document.getElementById('tab-projekte').innerHTML=t.projects.map(p=>{
@@ -247,20 +428,25 @@ function renderProjTab(){
       <div class="proj-entry">
         <select onchange="pasgn(${p.id},${ai},'devId',+this.value)">${devOpts(a.devId)}</select>
         <input type="number" min="1" max="60" value="${a.hpw}" onchange="pasgn(${p.id},${ai},'hpw',+this.value)" style="width:60px">
-        <span style="font-size:11px;color:#888">Std/Wo</span>
-        <select onchange="pasgn(${p.id},${ai},'start',+this.value)">${kwOpts(a.start)}</select>
-        <input type="number" min="1" max="${WEEKS}" value="${a.dur}" onchange="pasgn(${p.id},${ai},'dur',+this.value)" style="width:60px">
-        <span style="font-size:11px;color:#888">Wochen</span>
+        <span class="field-lbl">Std/Wo</span>
+        <input type="date" value="${a.startDate}" onchange="pasgn(${p.id},${ai},'startDate',this.value)">
+        <span class="field-lbl">bis</span>
+        <input type="date" value="${a.endDate}" onchange="pasgn(${p.id},${ai},'endDate',this.value)">
         <button class="del" onclick="rmAsgn(${p.id},${ai})">×</button>
       </div>`).join('');
     return`<div class="card">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
         <input type="color" value="${p.color}" onchange="projById(${p.id}).color=this.value;renderAll()">
-        <input type="text" value="${p.name}" onchange="projById(${p.id}).name=this.value;renderAll()" style="flex:1;width:auto">
+        <input type="text" value="${p.name}" onchange="projById(${p.id}).name=this.value;renderAll()" style="flex:1;min-width:120px">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span class="field-lbl">Deadline:</span>
+          <input type="date" value="${p.deadline||''}" onchange="projById(${p.id}).deadline=this.value||'';renderAll()">
+          ${deadlineBadge(p.deadline)}
+        </div>
         <button class="del" onclick="td().projects=td().projects.filter(x=>x.id!=${p.id});renderAll()">×</button>
       </div>
-      <div style="display:grid;grid-template-columns:30px 1fr 80px 80px 70px 24px;gap:4px;margin-bottom:4px;font-size:11px;color:#888">
-        <span></span><span>Entwickler</span><span>Std/Wo</span><span>Start</span><span>Dauer</span><span></span>
+      <div style="display:grid;grid-template-columns:1fr 70px 140px 8px 140px 24px;gap:6px;align-items:center;margin-bottom:4px;font-size:11px;color:#888;padding:0 0 4px;border-bottom:0.5px solid #f0f0ec">
+        <span>Entwickler</span><span>Std/Wo</span><span>Von</span><span></span><span>Bis</span><span></span>
       </div>
       ${aRows}
       <button class="btn btn-sm" style="margin-top:8px" onclick="addAsgn(${p.id})">+ Entwickler zuweisen</button>
@@ -268,13 +454,56 @@ function renderProjTab(){
   }).join('')+`<button class="btn" onclick="addProj()" style="margin-top:4px">+ Projekt</button>`;
 }
 
+// ---- Entwickler Tab ----
+function renderMiniCal(devId){
+  const dev=devById(devId);if(!dev)return'';
+  const abs=getAbsences(dev);
+  const cs=getCalState(devId);
+  const {y,m}=cs;
+  const firstDay=new Date(y,m,1);
+  const lastDay=new Date(y,m+1,0);
+  const startDow=firstDay.getDay()===0?6:firstDay.getDay()-1; // 0=Mon
+  const todayStr=today();
+
+  let cells='';
+  // Empty cells before month start
+  for(let i=0;i<startDow;i++)cells+=`<div class="cal-day cal-other"></div>`;
+  for(let day=1;day<=lastDay.getDate();day++){
+    const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const dow=new Date(y,m,day).getDay(); // 0=Sun,6=Sat
+    const isWe=dow===0||dow===6;
+    const isBlocked=abs.includes(ds);
+    const isTod=ds===todayStr;
+    let cls='cal-day';
+    if(isWe)cls+=' cal-weekend';
+    else if(isBlocked)cls+=' cal-blocked';
+    if(isTod&&!isWe)cls+=' cal-today';
+    const onclick=isWe?'':` onclick="toggleAbsDay(${devId},'${ds}')"`;
+    cells+=`<div class="${cls}"${onclick}>${day}</div>`;
+  }
+
+  // Absence tags sorted
+  const sorted=[...abs].sort();
+  const tags=sorted.map(d=>`<span class="absence-tag">${fmtFull(d)}<button onclick="toggleAbsDay(${devId},'${d}')">×</button></span>`).join('');
+
+  return`<div class="absence-section">
+    <label>Abwesenheitstage (Urlaub / Krank / Feiertag):</label>
+    <div class="cal-nav">
+      <button onclick="calPrev(${devId})">‹</button>
+      <span>${fmtMonthYear(y,m)}</span>
+      <button onclick="calNext(${devId})">›</button>
+    </div>
+    <div class="cal-grid">
+      ${DAY_NAMES.map(n=>`<div class="cal-day-hdr">${n}</div>`).join('')}
+      ${cells}
+    </div>
+    ${sorted.length?`<div style="font-size:11px;color:#888;margin-top:8px;margin-bottom:3px">${sorted.length} Tag${sorted.length!==1?'e':''} eingetragen:</div><div class="absence-tags">${tags}</div>`:''}
+  </div>`;
+}
+
 function renderDevTab(){
   const t=td();
   document.getElementById('tab-entwickler').innerHTML=t.devs.map(d=>{
-    const kws=kwList().map(kw=>{
-      const bl=d.blocked.includes(kw);
-      return`<button class="kw-btn${bl?' blocked':''}" onclick="toggleBlock(${d.id},${kw})">KW ${kw}</button>`;
-    }).join('');
     return`<div class="card">
       <div class="dev-header">
         <div class="avatar" style="background:${d.color};color:${d.ctxt}">${initials(d.name)}</div>
@@ -286,108 +515,28 @@ function renderDevTab(){
         </div>
         <button class="del" onclick="td().devs=td().devs.filter(x=>x.id!=${d.id});renderAll()">×</button>
       </div>
-      <div style="font-size:12px;color:#888;margin-bottom:5px">Wochen blockieren (Urlaub / Abwesenheit):</div>
-      <div class="block-grid">${kws}</div>
+      ${renderMiniCal(d.id)}
     </div>`;
   }).join('')+`<button class="btn" onclick="addDev()" style="margin-top:4px">+ Entwickler</button>`;
 }
 
-function buildGrid(){
-  const weeks=kwList();
-  const cw=Math.max(38,Math.floor((window.innerWidth-130-80)/WEEKS));
-  return{weeks,cols:`130px ${weeks.map(()=>cw+'px').join(' ')}`};
+function toggleAbsDay(did,dateStr){
+  const dev=devById(did);if(!dev)return;
+  const abs=getAbsences(dev);
+  const i=abs.indexOf(dateStr);
+  if(i>=0)abs.splice(i,1);else abs.push(dateStr);
+  renderAll();
 }
-function hdr(cols,weeks){
-  return`<div class="g-hdr" style="grid-template-columns:${cols}"><div></div>${weeks.map(w=>`<div class="g-wk-hdr">KW ${w}</div>`).join('')}</div>`;
-}
-function drow(cols,label,weeks,start,dur,color,rlabel,blocked){
-  const si=start-KW0,ei=Math.min(si+dur,WEEKS);
-  const cells=weeks.map((_,i)=>{
-    const kw=KW0+i,bl=blocked&&blocked.includes(kw);
-    if(i>=si&&i<ei){
-      if(bl)return`<div class="g-cell"><div class="g-off"></div></div>`;
-      return`<div class="g-cell"><div class="g-block" style="background:${color}28;border:1.5px solid ${color};color:${color}">${i===si?rlabel:''}</div></div>`;
-    }
-    return`<div class="g-cell">${bl?'<div class="g-off"></div>':''}</div>`;
-  }).join('');
-  return`<div class="g-row" style="grid-template-columns:${cols}"><div class="g-lbl">${label}</div>${cells}</div>`;
-}
-function ganttByDev(g,devs,projects){
-  let h=hdr(g.cols,g.weeks);
-  devs.forEach(dev=>{
-    h+=`<div class="g-sep"><div class="g-sep-dot" style="background:${dev.color}"></div>${dev.name}<span style="font-weight:400;color:#aaa;margin-left:4px">${dev.cap} Std/Wo</span></div>`;
-    const dp=projects.filter(p=>p.assignments.some(a=>a.devId===dev.id));
-    if(!dp.length){h+=drow(g.cols,'<i style="color:#bbb">keine Projekte</i>',g.weeks,KW0,0,'#ccc','',dev.blocked);return;}
-    dp.forEach(proj=>proj.assignments.filter(a=>a.devId===dev.id).forEach(a=>{
-      h+=drow(g.cols,proj.name,g.weeks,a.start,a.dur,proj.color,proj.name+' ('+a.hpw+'h)',dev.blocked);
-    }));
-  });
-  return h;
-}
-function ganttByProj(g,devs,projects){
-  let h=hdr(g.cols,g.weeks);
-  projects.forEach(proj=>{
-    h+=`<div class="g-sep"><div class="g-sep-dot" style="background:${proj.color}"></div>${proj.name}</div>`;
-    if(!proj.assignments.length){h+=`<div class="g-row" style="grid-template-columns:${g.cols}"><div class="g-lbl" style="font-style:italic;color:#bbb">keine Zuweisung</div>${g.weeks.map(()=>'<div class="g-cell"></div>').join('')}</div>`;return;}
-    proj.assignments.forEach(a=>{
-      const dev=devs.find(d=>d.id===a.devId);if(!dev)return;
-      const lbl=`<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:${dev.color};display:inline-block"></span>${dev.name}</span>`;
-      h+=drow(g.cols,lbl,g.weeks,a.start,a.dur,proj.color,dev.name+' ('+a.hpw+'h)',dev.blocked);
-    });
-  });
-  return h;
-}
-function renderGantt(){
-  const g=buildGrid();
-  const gv=ganttViews[activeTeam];
-  const d=td();
-  document.getElementById('gantt').innerHTML=gv==='dev'?ganttByDev(g,d.devs,d.projects):ganttByProj(g,d.devs,d.projects);
-}
-function renderUtil(){
-  const weeks=kwList();
-  const d=td();
-  document.getElementById('utilGrid').innerHTML=d.devs.map(dev=>{
-    const wd=weeks.map(kw=>{
-      if(dev.blocked.includes(kw))return{kw,load:0,blocked:true};
-      let load=0;
-      d.projects.forEach(p=>p.assignments.filter(a=>a.devId===dev.id).forEach(a=>{if(kw>=a.start&&kw<a.start+a.dur)load+=a.hpw}));
-      return{kw,load,blocked:false};
-    });
-    const active=wd.filter(w=>!w.blocked&&w.load>0);
-    const avg=active.length?Math.round(active.reduce((s,w)=>s+w.load,0)/active.length):0;
-    const max=Math.max(...wd.filter(w=>!w.blocked).map(w=>w.load),0);
-    const pct=dev.cap>0?Math.min(Math.round(avg/dev.cap*100),200):0;
-    const overKW=wd.find(w=>!w.blocked&&w.load>dev.cap);
-    const col=pct>100?'#e24b4a':pct>80?'#f0a030':'#3a9e60';
-    const blCnt=dev.blocked.filter(kw=>kw>=KW0&&kw<KW0+WEEKS).length;
-    return`<div class="util-card">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-        <div class="avatar" style="background:${dev.color};color:${dev.ctxt};width:28px;height:28px;font-size:10px;flex-shrink:0">${initials(dev.name)}</div>
-        <span style="font-size:13px;font-weight:600">${dev.name}</span>
-      </div>
-      <div class="bar-wrap"><div class="bar-fill" style="width:${Math.min(pct,100)}%;background:${col}"></div></div>
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:#888">
-        <span>Ø ${avg} Std/Wo</span><span style="font-weight:600;color:${col}">${pct}%</span>
-      </div>
-      <div style="font-size:11px;color:#aaa;margin-top:3px">Max ${max} Std · ${blCnt} Wo blockiert</div>
-      ${overKW?`<div class="alertbox aw">Überlastung ab KW ${overKW.kw}</div>`:`<div class="alertbox ao">Auslastung im grünen Bereich</div>`}
-    </div>`;
-  }).join('');
-}
+function calPrev(did){const cs=getCalState(did);cs.m--;if(cs.m<0){cs.m=11;cs.y--;}renderDevTab();}
+function calNext(did){const cs=getCalState(did);cs.m++;if(cs.m>11){cs.m=0;cs.y++;}renderDevTab();}
 
 function pasgn(pid,ai,k,v){const p=projById(pid);if(p&&p.assignments[ai])p.assignments[ai][k]=v;renderAll()}
 function rmAsgn(pid,ai){const p=projById(pid);if(p)p.assignments.splice(ai,1);renderAll()}
-function addAsgn(pid){const p=projById(pid);if(p)p.assignments.push({devId:devs()[0]?.id||1,hpw:8,start:KW0,dur:4});renderAll()}
-function toggleBlock(did,kw){const d=devById(did);if(!d)return;const i=d.blocked.indexOf(kw);if(i>=0)d.blocked.splice(i,1);else d.blocked.push(kw);renderAll()}
-function addDev(){const t=td();t.dc++;const ci=t.devs.length%AVT_BG.length;t.devs.push({id:t.dc,name:'Dev '+t.dc,cap:40,blocked:[],color:AVT_BG[ci],ctxt:AVT_TX[ci]});renderAll()}
-function addProj(){const t=td();t.pc++;t.projects.push({id:t.pc,name:'Projekt '+t.pc,color:COLORS[t.pc%COLORS.length],assignments:[{devId:t.devs[0]?.id||1,hpw:8,start:KW0,dur:4}]});renderAll()}
+function addAsgn(pid){const p=projById(pid);const t=td();if(p)p.assignments.push({devId:t.devs[0]?.id||1,hpw:8,startDate:today(),endDate:addWeeks(today(),4)});renderAll()}
+function addDev(){const t=td();t.dc++;const ci=t.devs.length%AVT_BG.length;t.devs.push({id:t.dc,name:'Dev '+t.dc,cap:40,absences:[],color:AVT_BG[ci],ctxt:AVT_TX[ci]});renderAll()}
+function addProj(){const t=td();t.pc++;t.projects.push({id:t.pc,name:'Projekt '+t.pc,color:COLORS[t.pc%COLORS.length],deadline:'',assignments:[{devId:t.devs[0]?.id||1,hpw:8,startDate:today(),endDate:addWeeks(today(),4)}]});renderAll()}
 
-function renderAll(){
-  renderGanttTab();
-  renderProjTab();
-  renderDevTab();
-  scheduleSave(activeTeam);
-}
+function renderAll(){renderGanttTab();renderProjTab();renderDevTab();scheduleSave(activeTeam)}
 
 loadAll();
 </script>
