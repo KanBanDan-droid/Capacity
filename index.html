@@ -147,7 +147,7 @@ const DAY_NAMES=['Mo','Di','Mi','Do','Fr','Sa','So'];
 
 // ---- Date helpers (all dates as YYYY-MM-DD strings) ----
 function today(){return toStr(new Date())}
-function toStr(d){return d.toISOString().slice(0,10)}
+function toStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function fromStr(s){const[y,m,d]=s.split('-');return new Date(+y,+m-1,+d)}
 function addDays(s,n){const d=fromStr(s);d.setDate(d.getDate()+n);return toStr(d)}
 function addWeeks(s,n){return addDays(s,n*7)}
