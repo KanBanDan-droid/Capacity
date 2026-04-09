@@ -63,7 +63,10 @@
 </head>
 <body>
 
-<h1>Kapazitätsplanung</h1>
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.75rem">
+  <h1 style="margin-bottom:0">Kapazitätsplanung</h1>
+  <button class="btn" style="font-size:11px;color:#aaa;border-color:#eee" onclick="if(confirm('Alle Daten zurücksetzen?')){localStorage.removeItem('kapplan_v1');location.reload()}">Zurücksetzen</button>
+</div>
 
 <div class="sec">Entwickler &amp; Kapazitäten</div>
 <div id="devList"></div>
@@ -95,17 +98,36 @@ const AVT_TX = ['#0a4080','#0a5535','#7a3800','#7a1840','#3a2888','#7a4000'];
 
 let ganttView = 'dev';
 
-let devs = [
+const DEFAULT_DEVS = [
   {id:1,name:'Anna M.',cap:40,blocked:[],color:AVT_BG[0],ctxt:AVT_TX[0]},
   {id:2,name:'Ben K.',cap:32,blocked:[18,19],color:AVT_BG[1],ctxt:AVT_TX[1]},
   {id:3,name:'Clara S.',cap:40,blocked:[],color:AVT_BG[2],ctxt:AVT_TX[2]},
 ];
-let projects = [
+const DEFAULT_PROJECTS = [
   {id:1,name:'Portal Redesign',color:'#378ADD',assignments:[{devId:1,hpw:20,start:15,dur:6},{devId:3,hpw:12,start:15,dur:4}]},
   {id:2,name:'API Migration',color:'#1D9E75',assignments:[{devId:2,hpw:24,start:16,dur:4}]},
   {id:3,name:'Bug Fixing',color:'#D85A30',assignments:[{devId:3,hpw:16,start:15,dur:8}]},
 ];
-let dc=10,pc=10;
+
+function loadData(){
+  try{
+    const saved=localStorage.getItem('kapplan_v1');
+    if(saved){
+      const d=JSON.parse(saved);
+      return{devs:d.devs||DEFAULT_DEVS,projects:d.projects||DEFAULT_PROJECTS,dc:d.dc||10,pc:d.pc||10};
+    }
+  }catch(e){}
+  return{devs:DEFAULT_DEVS,projects:DEFAULT_PROJECTS,dc:10,pc:10};
+}
+
+function saveData(){
+  try{localStorage.setItem('kapplan_v1',JSON.stringify({devs,projects,dc,pc}));}catch(e){}
+}
+
+const loaded=loadData();
+let devs=loaded.devs;
+let projects=loaded.projects;
+let dc=loaded.dc,pc=loaded.pc;
 
 function initials(n){return n.split(' ').map(x=>x[0]).join('').toUpperCase().slice(0,2)}
 function kwList(){return Array.from({length:WEEKS},(_,i)=>KW0+i)}
@@ -264,7 +286,7 @@ function renderUtil(){
   }).join('');
 }
 
-function renderAll(){renderDevs();renderProjs();renderGantt();renderUtil()}
+function renderAll(){renderDevs();renderProjs();renderGantt();renderUtil();saveData()}
 
 function addDev(){dc++;const ci=devs.length%AVT_BG.length;devs.push({id:dc,name:'Dev '+dc,cap:40,blocked:[],color:AVT_BG[ci],ctxt:AVT_TX[ci]});renderAll()}
 function addProj(){pc++;projects.push({id:pc,name:'Projekt '+pc,color:COLORS[pc%COLORS.length],assignments:[{devId:devs[0]?.id||1,hpw:8,start:KW0,dur:4}]});renderAll()}
