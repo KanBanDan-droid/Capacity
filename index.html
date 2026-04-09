@@ -148,7 +148,7 @@ const DAY_NAMES=['Mo','Di','Mi','Do','Fr','Sa','So'];
 // ---- Date helpers (all dates as YYYY-MM-DD strings) ----
 function today(){return toStr(new Date())}
 function toStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
-function fromStr(s){const[y,m,d]=s.split('-');return new Date(+y,+m-1,+d)}
+function fromStr(s){const p=s.trim().split('-');return new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]))}
 function addDays(s,n){const d=fromStr(s);d.setDate(d.getDate()+n);return toStr(d)}
 function addWeeks(s,n){return addDays(s,n*7)}
 function diffDays(a,b){return Math.round((fromStr(b)-fromStr(a))/86400000)}
@@ -236,10 +236,28 @@ function scheduleSave(team){
 }
 async function doSave(team){
   try{
-    const res=await fetch(SBURL(team),{method:'PATCH',headers:HDRS,body:JSON.stringify({data:teams[team],updated_at:new Date().toISOString()})});
-    if(!res.ok){const e=await res.json();throw new Error(e.message||'Fehler')}
-    showStatus('saved','Gespeichert');setTimeout(()=>showStatus('hidden',''),1500);
-  }catch(e){showStatus('error','Fehler: '+e.message)}
+    const payload=JSON.stringify({data:teams[team],updated_at:new Date().toISOString()});
+    // Try PATCH first (update existing row)
+    const res=await fetch(SBURL(team),{method:'PATCH',headers:HDRS,body:payload});
+    if(res.status===404||res.status===406){
+      // Row doesn't exist yet — INSERT it
+      const ins=await fetch(`${SUPABASE_URL}/rest/v1/kapplan`,{
+        method:'POST',
+        headers:{...HDRS,'Prefer':'return=minimal'},
+        body:JSON.stringify({id:team,data:teams[team],updated_at:new Date().toISOString()})
+      });
+      if(!ins.ok){const e=await ins.json();throw new Error('INSERT: '+(e.message||ins.status))}
+    } else if(!res.ok){
+      const e=await res.json();
+      console.error('Supabase PATCH error:',e);
+      throw new Error('PATCH: '+(e.message||res.status));
+    }
+    showStatus('saved','Gespeichert');
+    setTimeout(()=>showStatus('hidden',''),1500);
+  }catch(e){
+    console.error('doSave error:',e);
+    showStatus('error','Fehler: '+e.message);
+  }
 }
 async function saveNow(team){
   clearTimeout(saveTimers[team]);
@@ -316,12 +334,14 @@ function hdr(g){
 
 // Check if a week has any absence day (Mon-Fri)
 function weekHasAbsence(wStart,absences){
-  for(let i=0;i<5;i++){if(absences.includes(addDays(wStart,i)))return true;}
+  if(!absences||!absences.length)return false;
+  for(let i=0;i<5;i++){if(absences.some(a=>a.trim()===addDays(wStart,i)))return true;}
   return false;
 }
 // Fraction of weekdays absent in week (0-1)
 function absenceFraction(wStart,absences){
-  let n=0;for(let i=0;i<5;i++){if(absences.includes(addDays(wStart,i)))n++;}
+  if(!absences||!absences.length)return 0;
+  let n=0;for(let i=0;i<5;i++){if(absences.some(a=>a.trim()===addDays(wStart,i)))n++;}
   return n/5;
 }
 
@@ -658,6 +678,18 @@ function addProj(){const t=td();t.pc++;t.projects.push({id:t.pc,name:'Projekt '+
 
 function renderAll(){renderGanttTab();renderProjTab();renderDevTab()}
 function saveAndRender(){renderAll();scheduleSave(activeTeam)}
+function debugAbsences(){
+  const t=td();
+  t.devs.forEach(dev=>{
+    if(!dev.absences||!dev.absences.length)return;
+    const weeks=weeksBetween(t.ganttStart,t.ganttEnd).slice(0,6);
+    console.log('--- '+dev.name+' absences:',dev.absences);
+    weeks.forEach(w=>{
+      const frac=absenceFraction(w,dev.absences);
+      if(frac>0)console.log('  Woche '+w+': frac='+frac);
+    });
+  });
+}
 
 loadAll();
 </script>
