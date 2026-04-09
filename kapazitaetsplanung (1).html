@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kapazitätsplanung</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f8f6;color:#1a1a1a;padding:2rem;font-size:14px}
+  h1{font-size:20px;font-weight:600;margin-bottom:1.75rem;color:#1a1a1a}
+  .sec{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.06em;margin:2rem 0 .75rem}
+  .card{background:#fff;border:1px solid #e8e8e4;border-radius:10px;padding:14px 16px;margin-bottom:10px}
+  .row{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+  .row:last-child{margin-bottom:0}
+  .lbl{font-size:12px;color:#888;min-width:80px}
+  input,select{padding:5px 9px;font-size:13px;border:1px solid #ddd;border-radius:6px;background:#fafaf8;color:#1a1a1a;outline:none}
+  input:focus,select:focus{border-color:#aaa;background:#fff}
+  input[type=number]{width:68px}
+  input[type=color]{width:34px;height:30px;padding:2px;cursor:pointer;border-radius:4px}
+  input[type=text]{width:140px}
+  .btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;font-size:12px;border:1px solid #ddd;border-radius:7px;background:#fff;color:#444;cursor:pointer;transition:background .15s}
+  .btn:hover{background:#f0f0ec}
+  .btn-sm{padding:3px 8px;font-size:11px}
+  .del{background:none;border:none;cursor:pointer;color:#bbb;font-size:16px;padding:2px 5px;border-radius:4px;line-height:1;transition:color .15s}
+  .del:hover{color:#e24b4a}
+  .dev-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .dev-header input[type=text]{font-size:14px;font-weight:600;background:transparent;border-color:transparent;width:160px}
+  .dev-header input[type=text]:hover,.dev-header input[type=text]:focus{background:#fafaf8;border-color:#ddd}
+  .avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
+  .block-grid{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+  .kw-btn{padding:3px 8px;font-size:11px;border:1px solid #e0e0da;border-radius:4px;cursor:pointer;background:#fafaf8;color:#888;transition:all .15s}
+  .kw-btn:hover{border-color:#ccc;color:#444}
+  .kw-btn.blocked{background:#fff8ec;border-color:#f0a040;color:#8a5500;font-weight:500}
+  .proj-entry{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0;border-top:1px solid #f0f0ec}
+  .proj-entry:first-child{border-top:none;padding-top:0}
+  .gantt-wrap{overflow-x:auto;margin-bottom:1.5rem}
+  .gantt{min-width:520px}
+  .g-hdr{display:grid;margin-bottom:3px}
+  .g-row{display:grid;align-items:center;margin-bottom:4px}
+  .g-lbl{font-size:11px;color:#888;padding-right:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .g-wk-hdr{font-size:10px;color:#aaa;text-align:center;border-left:1px solid #eee;padding:2px 0}
+  .g-cell{height:22px;border-left:1px solid #f0f0ec;position:relative}
+  .g-block{height:22px;border-radius:3px;display:flex;align-items:center;padding:0 6px;font-size:10px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .g-off{height:22px;background:repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(0,0,0,.06) 3px,rgba(0,0,0,.06) 6px);border-radius:3px}
+  .g-sep{font-size:11px;font-weight:600;color:#444;padding:10px 0 4px;border-bottom:1px solid #e4e4e0;margin-bottom:5px;display:flex;align-items:center;gap:7px}
+  .g-sep-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .util-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+  .util-card{background:#fff;border:1px solid #e8e8e4;border-radius:10px;padding:12px 14px}
+  .bar-wrap{height:6px;background:#f0f0ec;border-radius:4px;overflow:hidden;margin:6px 0;border:1px solid #e8e8e4}
+  .bar-fill{height:100%;border-radius:4px;transition:width .3s}
+  .alert{font-size:11px;padding:4px 9px;border-radius:5px;margin-top:6px}
+  .aw{background:#fff8ec;color:#8a5500;border:1px solid #f0d090}
+  .ao{background:#f0f8ea;color:#3a6010;border:1px solid #c0dc90}
+  .legend{display:flex;gap:14px;margin-bottom:.75rem;flex-wrap:wrap}
+  .legend-item{display:flex;align-items:center;gap:5px;font-size:12px;color:#888}
+  .legend-hatch{width:14px;height:14px;border-radius:3px;background:repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(0,0,0,.1) 3px,rgba(0,0,0,.1) 6px);border:1px solid #ddd}
+  .toggle-bar{display:flex;border:1px solid #ddd;border-radius:7px;overflow:hidden;width:fit-content;margin-bottom:1rem}
+  .toggle-btn{padding:7px 18px;font-size:12px;border:none;border-right:1px solid #ddd;background:#fff;color:#666;cursor:pointer;transition:all .15s}
+  .toggle-btn:last-child{border-right:none}
+  .toggle-btn.active{background:#1a1a1a;color:#fff}
+  .toggle-btn:hover:not(.active){background:#f0f0ec}
+</style>
+</head>
+<body>
+
+<h1>Kapazitätsplanung</h1>
+
+<div class="sec">Entwickler &amp; Kapazitäten</div>
+<div id="devList"></div>
+<button class="btn" onclick="addDev()" style="margin-bottom:1rem">+ Entwickler</button>
+
+<div class="sec">Projekte</div>
+<div id="projList"></div>
+<button class="btn" onclick="addProj()" style="margin-bottom:1rem">+ Projekt</button>
+
+<div class="sec">Gantt-Übersicht</div>
+<div class="toggle-bar">
+  <button class="toggle-btn active" id="btnDev" onclick="setGanttView('dev')">Nach Entwickler</button>
+  <button class="toggle-btn" id="btnProj" onclick="setGanttView('proj')">Nach Projekt</button>
+</div>
+<div class="legend">
+  <div class="legend-item"><div class="legend-hatch"></div> Abwesend / blockiert</div>
+</div>
+<div class="gantt-wrap"><div class="gantt" id="gantt"></div></div>
+
+<div class="sec">Auslastung pro Entwickler</div>
+<div class="util-grid" id="utilGrid"></div>
+
+<script>
+const WEEKS = 12;
+const KW0 = 15;
+const COLORS = ['#378ADD','#1D9E75','#D85A30','#D4537E','#7F77DD','#BA7517','#639922','#185FA5'];
+const AVT_BG = ['#dbeeff','#d0f5e8','#fdecd8','#fce4ef','#eae8fd','#fcebd0'];
+const AVT_TX = ['#0a4080','#0a5535','#7a3800','#7a1840','#3a2888','#7a4000'];
+
+let ganttView = 'dev';
+
+let devs = [
+  {id:1,name:'Anna M.',cap:40,blocked:[],color:AVT_BG[0],ctxt:AVT_TX[0]},
+  {id:2,name:'Ben K.',cap:32,blocked:[18,19],color:AVT_BG[1],ctxt:AVT_TX[1]},
+  {id:3,name:'Clara S.',cap:40,blocked:[],color:AVT_BG[2],ctxt:AVT_TX[2]},
+];
+let projects = [
+  {id:1,name:'Portal Redesign',color:'#378ADD',assignments:[{devId:1,hpw:20,start:15,dur:6},{devId:3,hpw:12,start:15,dur:4}]},
+  {id:2,name:'API Migration',color:'#1D9E75',assignments:[{devId:2,hpw:24,start:16,dur:4}]},
+  {id:3,name:'Bug Fixing',color:'#D85A30',assignments:[{devId:3,hpw:16,start:15,dur:8}]},
+];
+let dc=10,pc=10;
+
+function initials(n){return n.split(' ').map(x=>x[0]).join('').toUpperCase().slice(0,2)}
+function kwList(){return Array.from({length:WEEKS},(_,i)=>KW0+i)}
+function devById(id){return devs.find(d=>d.id===id)}
+function projById(id){return projects.find(p=>p.id===id)}
+function devOptions(sel){return devs.map(d=>`<option value="${d.id}"${d.id===sel?' selected':''}>${d.name}</option>`).join('')}
+function kwOptions(sel){return kwList().map(kw=>`<option value="${kw}"${kw===sel?' selected':''}>KW ${kw}</option>`).join('')}
+
+function setGanttView(v){
+  ganttView=v;
+  document.getElementById('btnDev').className='toggle-btn'+(v==='dev'?' active':'');
+  document.getElementById('btnProj').className='toggle-btn'+(v==='proj'?' active':'');
+  renderGantt();
+}
+
+function renderDevs(){
+  document.getElementById('devList').innerHTML = devs.map(d=>{
+    const kws = kwList().map(kw=>{
+      const bl = d.blocked.includes(kw);
+      return `<button class="kw-btn${bl?' blocked':''}" onclick="toggleBlock(${d.id},${kw})">KW ${kw}</button>`;
+    }).join('');
+    return `<div class="card">
+      <div class="dev-header">
+        <div class="avatar" style="background:${d.color};color:${d.ctxt}">${initials(d.name)}</div>
+        <input type="text" value="${d.name}" onchange="devById(${d.id}).name=this.value;renderAll()">
+        <div class="row" style="margin:0;flex:1">
+          <span class="lbl">Kapazität</span>
+          <input type="number" min="1" max="60" value="${d.cap}" onchange="devById(${d.id}).cap=+this.value;renderAll()">
+          <span style="font-size:12px;color:#888">Std/Wo</span>
+        </div>
+        <button class="del" onclick="devs=devs.filter(x=>x.id!=${d.id});renderAll()">×</button>
+      </div>
+      <div style="font-size:12px;color:#888;margin-bottom:5px">Wochen blockieren (Urlaub / Abwesenheit):</div>
+      <div class="block-grid">${kws}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderProjs(){
+  document.getElementById('projList').innerHTML = projects.map(p=>{
+    const aRows = p.assignments.map((a,ai)=>`
+      <div class="proj-entry">
+        <select onchange="p_asgn(${p.id},${ai},'devId',+this.value)">${devOptions(a.devId)}</select>
+        <input type="number" min="1" max="60" value="${a.hpw}" onchange="p_asgn(${p.id},${ai},'hpw',+this.value)" style="width:60px">
+        <span style="font-size:11px;color:#888">Std/Wo</span>
+        <select onchange="p_asgn(${p.id},${ai},'start',+this.value)">${kwOptions(a.start)}</select>
+        <input type="number" min="1" max="${WEEKS}" value="${a.dur}" onchange="p_asgn(${p.id},${ai},'dur',+this.value)" style="width:60px">
+        <span style="font-size:11px;color:#888">Wochen</span>
+        <button class="del btn-sm" onclick="removeAsgn(${p.id},${ai})">×</button>
+      </div>`).join('');
+    return `<div class="card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <input type="color" value="${p.color}" onchange="projById(${p.id}).color=this.value;renderAll()">
+        <input type="text" value="${p.name}" onchange="projById(${p.id}).name=this.value;renderAll()" style="flex:1;width:auto">
+        <button class="del" onclick="projects=projects.filter(x=>x.id!=${p.id});renderAll()">×</button>
+      </div>
+      <div style="display:grid;grid-template-columns:30px 1fr 80px 80px 80px 30px;gap:4px;margin-bottom:4px;font-size:11px;color:#888">
+        <span></span><span>Entwickler</span><span>Std/Wo</span><span>Start</span><span>Dauer</span><span></span>
+      </div>
+      ${aRows}
+      <button class="btn btn-sm" style="margin-top:8px" onclick="addAsgn(${p.id})">+ Entwickler zuweisen</button>
+    </div>`;
+  }).join('');
+}
+
+function p_asgn(pid,ai,key,val){const p=projById(pid);if(p&&p.assignments[ai])p.assignments[ai][key]=val;renderAll()}
+function removeAsgn(pid,ai){const p=projById(pid);if(p)p.assignments.splice(ai,1);renderAll()}
+function addAsgn(pid){const p=projById(pid);if(p)p.assignments.push({devId:devs[0]?.id||1,hpw:8,start:KW0,dur:4});renderAll()}
+function toggleBlock(did,kw){const d=devById(did);if(!d)return;const i=d.blocked.indexOf(kw);if(i>=0)d.blocked.splice(i,1);else d.blocked.push(kw);renderAll()}
+
+function buildGrid(){
+  const weeks=kwList();
+  const cw=Math.max(38,Math.floor((window.innerWidth-130-80)/WEEKS));
+  return{weeks,cw,cols:`130px ${weeks.map(()=>cw+'px').join(' ')}`};
+}
+
+function hdrRow(cols,weeks){
+  return `<div class="g-hdr" style="grid-template-columns:${cols}"><div></div>${weeks.map(w=>`<div class="g-wk-hdr">KW ${w}</div>`).join('')}</div>`;
+}
+
+function dataRow(cols,label,weeks,startKW,dur,projColor,rowLabel,blockedWeeks){
+  const si=startKW-KW0, ei=Math.min(si+dur,WEEKS);
+  const cells=weeks.map((_,i)=>{
+    const kw=KW0+i, bl=blockedWeeks&&blockedWeeks.includes(kw);
+    if(i>=si&&i<ei){
+      if(bl)return`<div class="g-cell"><div class="g-off" title="Abwesend"></div></div>`;
+      return`<div class="g-cell"><div class="g-block" style="background:${projColor}28;border:1.5px solid ${projColor};color:${projColor}">${i===si?rowLabel:''}</div></div>`;
+    }
+    return`<div class="g-cell">${bl?'<div class="g-off"></div>':''}</div>`;
+  }).join('');
+  return`<div class="g-row" style="grid-template-columns:${cols}"><div class="g-lbl">${label}</div>${cells}</div>`;
+}
+
+function renderGanttByDev(g){
+  let h=hdrRow(g.cols,g.weeks);
+  devs.forEach(dev=>{
+    h+=`<div class="g-sep"><div class="g-sep-dot" style="background:${dev.color};border:1px solid ${dev.ctxt}40"></div>${dev.name}<span style="font-weight:400;color:#aaa;margin-left:4px">${dev.cap} Std/Wo</span></div>`;
+    const dp=projects.filter(p=>p.assignments.some(a=>a.devId===dev.id));
+    if(!dp.length){h+=dataRow(g.cols,'<i>keine Projekte</i>',g.weeks,KW0,0,'#ccc','',dev.blocked);return;}
+    dp.forEach(proj=>{
+      proj.assignments.filter(a=>a.devId===dev.id).forEach(a=>{
+        h+=dataRow(g.cols,proj.name,g.weeks,a.start,a.dur,proj.color,proj.name+' ('+a.hpw+'h)',dev.blocked);
+      });
+    });
+  });
+  return h;
+}
+
+function renderGanttByProj(g){
+  let h=hdrRow(g.cols,g.weeks);
+  projects.forEach(proj=>{
+    h+=`<div class="g-sep"><div class="g-sep-dot" style="background:${proj.color}"></div>${proj.name}</div>`;
+    if(!proj.assignments.length){h+=`<div class="g-row" style="grid-template-columns:${g.cols}"><div class="g-lbl" style="font-style:italic;color:#aaa">keine Zuweisung</div>${g.weeks.map(()=>'<div class="g-cell"></div>').join('')}</div>`;return;}
+    proj.assignments.forEach(a=>{
+      const dev=devById(a.devId);if(!dev)return;
+      const devLabel=`<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:${dev.color};display:inline-block"></span>${dev.name}</span>`;
+      h+=dataRow(g.cols,devLabel,g.weeks,a.start,a.dur,proj.color,dev.name+' ('+a.hpw+'h)',dev.blocked);
+    });
+  });
+  return h;
+}
+
+function renderGantt(){
+  const g=buildGrid();
+  document.getElementById('gantt').innerHTML=ganttView==='dev'?renderGanttByDev(g):renderGanttByProj(g);
+}
+
+function renderUtil(){
+  const weeks=kwList();
+  document.getElementById('utilGrid').innerHTML=devs.map(dev=>{
+    const wd=weeks.map(kw=>{
+      if(dev.blocked.includes(kw))return{kw,load:0,blocked:true};
+      let load=0;
+      projects.forEach(p=>p.assignments.filter(a=>a.devId===dev.id).forEach(a=>{if(kw>=a.start&&kw<a.start+a.dur)load+=a.hpw}));
+      return{kw,load,blocked:false};
+    });
+    const active=wd.filter(w=>!w.blocked&&w.load>0);
+    const avg=active.length?Math.round(active.reduce((s,w)=>s+w.load,0)/active.length):0;
+    const max=Math.max(...wd.filter(w=>!w.blocked).map(w=>w.load),0);
+    const pct=dev.cap>0?Math.min(Math.round(avg/dev.cap*100),200):0;
+    const overKW=wd.find(w=>!w.blocked&&w.load>dev.cap);
+    const col=pct>100?'#e24b4a':pct>80?'#f0a030':'#3a9e60';
+    const blCnt=dev.blocked.filter(kw=>kw>=KW0&&kw<KW0+WEEKS).length;
+    return`<div class="util-card">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <div class="avatar" style="background:${dev.color};color:${dev.ctxt};width:28px;height:28px;font-size:10px;flex-shrink:0">${initials(dev.name)}</div>
+        <span style="font-size:13px;font-weight:600">${dev.name}</span>
+      </div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:${Math.min(pct,100)}%;background:${col}"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:#888">
+        <span>Ø ${avg} Std/Wo</span><span style="font-weight:600;color:${col}">${pct}%</span>
+      </div>
+      <div style="font-size:11px;color:#aaa;margin-top:3px">Max ${max} Std · ${blCnt} Wo blockiert</div>
+      ${overKW?`<div class="alert aw">Überlastung ab KW ${overKW.kw}</div>`:`<div class="alert ao">Auslastung im grünen Bereich</div>`}
+    </div>`;
+  }).join('');
+}
+
+function renderAll(){renderDevs();renderProjs();renderGantt();renderUtil()}
+
+function addDev(){dc++;const ci=devs.length%AVT_BG.length;devs.push({id:dc,name:'Dev '+dc,cap:40,blocked:[],color:AVT_BG[ci],ctxt:AVT_TX[ci]});renderAll()}
+function addProj(){pc++;projects.push({id:pc,name:'Projekt '+pc,color:COLORS[pc%COLORS.length],assignments:[{devId:devs[0]?.id||1,hpw:8,start:KW0,dur:4}]});renderAll()}
+
+renderAll();
+</script>
+</body>
+</html>
