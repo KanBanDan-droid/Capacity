@@ -366,7 +366,9 @@ function drow(g,label,startDate,endDate,color,rlabel,absences,deadlineDate){
       const isFirst=startDate>=wStart&&startDate<=wEnd;
       return`<div class="g-cell">${dlStyle}<div class="g-block" style="background:${color}28;border:1.5px solid ${color};color:${color}">${isFirst?rlabel:''}</div>${partial}</div>`;
     }
-    return`<div class="g-cell">${dlStyle}${hasAbs?`<div class="g-off" style="opacity:${frac}"></div>`:''}</div>`;
+    // no project overlap — show partial schraffur proportional to absent days
+    const absDays=Math.round(frac*5);
+    return`<div class="g-cell">${dlStyle}${frac>0?`<div title="${absDays} Tag${absDays!==1?'e':''} abwesend" style="height:20px;margin:1px 2px;width:calc(${Math.round(frac*100)}% - 4px);background:repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(0,0,0,.09) 3px,rgba(0,0,0,.09) 6px);border-radius:3px"></div>`:''}</div>`;
   }).join('');
   return`<div class="g-row" style="grid-template-columns:${g.cols}"><div class="g-lbl">${label}</div>${cells}</div>`;
 }
@@ -376,7 +378,13 @@ function ganttByDev(g,devs,projects){
   devs.forEach(dev=>{
     h+=`<div class="g-sep"><div class="g-sep-dot" style="background:${dev.color}"></div>${dev.name}<span style="font-weight:400;color:#aaa;margin-left:4px">${dev.cap} Std/Wo</span></div>`;
     const dp=projects.filter(p=>p.assignments.some(a=>a.devId===dev.id));
-    if(!dp.length){h+=`<div class="g-row" style="grid-template-columns:${g.cols}"><div class="g-lbl"><i style="color:#bbb">keine Projekte</i></div>${g.weeks.map(w=>`<div class="g-cell">${weekHasAbsence(w,dev.absences)?'<div class="g-off"></div>':''}</div>`).join('')}</div>`;return;}
+    if(!dp.length){h+=`<div class="g-row" style="grid-template-columns:${g.cols}"><div class="g-lbl"><i style="color:#bbb">keine Projekte</i></div>${g.weeks.map(w=>{
+      const frac=absenceFraction(w,dev.absences);
+      if(!frac)return`<div class="g-cell"></div>`;
+      const absDays=Math.round(frac*5);
+      if(frac===1)return`<div class="g-cell"><div class="g-off"></div></div>`;
+      return`<div class="g-cell"><div title="${absDays} Tag${absDays!==1?'e':''} abwesend" style="height:20px;margin:1px 2px;width:calc(${Math.round(frac*100)}% - 4px);background:repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(0,0,0,.09) 3px,rgba(0,0,0,.09) 6px);border-radius:3px"></div></div>`;
+    }).join('')}</div>`;return;}
     dp.forEach(proj=>proj.assignments.filter(a=>a.devId===dev.id).forEach(a=>{
       const hpw=a.hpw||0;
       const lbl=proj.name+(hpw?` (${hpw}h/Wo)`:'');
