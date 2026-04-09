@@ -115,10 +115,7 @@
 
 <div class="topbar">
   <h1>Kapazitätsplanung</h1>
-  <div style="display:flex;align-items:center;gap:10px">
-    <span class="save-status hidden" id="saveStatus"></span>
-    <button class="btn btn-danger" onclick="resetTeam()">Zurücksetzen</button>
-  </div>
+  <span class="save-status hidden" id="saveStatus"></span>
 </div>
 
 <div class="team-bar">
@@ -352,7 +349,9 @@ function ganttByDev(g,devs,projects){
     const dp=projects.filter(p=>p.assignments.some(a=>a.devId===dev.id));
     if(!dp.length){h+=`<div class="g-row" style="grid-template-columns:${g.cols}"><div class="g-lbl"><i style="color:#bbb">keine Projekte</i></div>${g.weeks.map(w=>`<div class="g-cell">${weekHasAbsence(w,dev.absences)?'<div class="g-off"></div>':''}</div>`).join('')}</div>`;return;}
     dp.forEach(proj=>proj.assignments.filter(a=>a.devId===dev.id).forEach(a=>{
-      h+=drow(g,proj.name,a.startDate,a.endDate,proj.color,proj.name+' ('+a.hpw+'h)',dev.absences,proj.deadline||null);
+      const hpw=a.hpw||0;
+      const lbl=proj.name+(hpw?` (${hpw}h/Wo)`:'');
+      h+=drow(g,proj.name,a.startDate,a.endDate,proj.color,lbl,dev.absences,proj.deadline||null);
     }));
   });
   return h;
@@ -365,8 +364,10 @@ function ganttByProj(g,devs,projects){
     if(!proj.assignments.length){h+=`<div class="g-row" style="grid-template-columns:${g.cols}"><div class="g-lbl" style="font-style:italic;color:#bbb">keine Zuweisung</div>${g.weeks.map(()=>'<div class="g-cell"></div>').join('')}</div>`;return;}
     proj.assignments.forEach(a=>{
       const dev=devs.find(d=>d.id===a.devId);if(!dev)return;
+      const hpw=a.hpw||0;
       const lbl=`<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:${dev.color};display:inline-block"></span>${dev.name}</span>`;
-      h+=drow(g,lbl,a.startDate,a.endDate,proj.color,dev.name+' ('+a.hpw+'h)',dev.absences,proj.deadline||null);
+      const rlbl=dev.name+(hpw?` (${hpw}h/Wo)`:'');
+      h+=drow(g,lbl,a.startDate,a.endDate,proj.color,rlbl,dev.absences,proj.deadline||null);
     });
   });
   return h;
@@ -388,7 +389,10 @@ function renderUtil(){
       const wEnd=addDays(wStart,6);
       let load=0;
       d.projects.forEach(p=>p.assignments.filter(a=>a.devId===dev.id).forEach(a=>{
-        if(a.startDate<=wEnd&&a.endDate>=wStart)load+=Math.round(a.hpw*(1-frac));
+        if(a.startDate<=wEnd&&a.endDate>=wStart){
+          const hpw=a.hpw||0;
+          load+=Math.round(hpw*(1-frac));
+        }
       }));
       return{load,blocked:false};
     });
@@ -424,20 +428,53 @@ function deadlineBadge(dl){
 function renderProjTab(){
   const t=td();
   document.getElementById('tab-projekte').innerHTML=t.projects.map(p=>{
-    const aRows=p.assignments.map((a,ai)=>`
-      <div class="proj-entry">
+    const totalHours=p.totalHours||0;
+    const aRows=p.assignments.map((a,ai)=>{
+      const dev=t.devs.find(d=>d.id===a.devId);
+      const weeks=Math.max(1,Math.round(diffDays(a.startDate,a.endDate)/7));
+      const hpw=a.hpw||0;
+      const devTotal=hpw*weeks;
+      return`<div class="proj-entry">
         <select onchange="pasgn(${p.id},${ai},'devId',+this.value)">${devOpts(a.devId)}</select>
-        <input type="number" min="1" max="60" value="${a.hpw}" onchange="pasgn(${p.id},${ai},'hpw',+this.value)" style="width:60px">
-        <span class="field-lbl">Std/Wo</span>
         <input type="date" value="${a.startDate}" onchange="pasgn(${p.id},${ai},'startDate',this.value)">
         <span class="field-lbl">bis</span>
         <input type="date" value="${a.endDate}" onchange="pasgn(${p.id},${ai},'endDate',this.value)">
+        <span style="font-size:11px;color:#aaa;white-space:nowrap">${hpw?`${hpw} Std/Wo × ${weeks} Wo = <b style="color:#444">${devTotal}h</b>`:'-'}</span>
         <button class="del" onclick="rmAsgn(${p.id},${ai})">×</button>
-      </div>`).join('');
+      </div>`;
+    }).join('');
+
+    // coverage summary
+    const allocatedTotal=p.assignments.reduce((s,a)=>{
+      const weeks=Math.max(1,Math.round(diffDays(a.startDate,a.endDate)/7));
+      return s+(a.hpw||0)*weeks;
+    },0);
+    const missing=totalHours-allocatedTotal;
+    const coveragePct=totalHours>0?Math.min(100,Math.round(allocatedTotal/totalHours*100)):0;
+    const coverageCol=missing>0?'#e24b4a':missing===0&&totalHours>0?'#3a9e60':'#888';
+    const coverageBar=totalHours>0?`
+      <div style="margin-top:10px;padding-top:10px;border-top:0.5px solid #f0f0ec">
+        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+          <span style="color:#888">Stunden zugeteilt</span>
+          <span style="font-weight:600;color:${coverageCol}">${allocatedTotal} / ${totalHours}h (${coveragePct}%)</span>
+        </div>
+        <div style="height:5px;background:#f0f0ec;border-radius:3px;overflow:hidden;border:0.5px solid #e8e8e4">
+          <div style="height:100%;width:${coveragePct}%;background:${coverageCol};border-radius:3px;transition:width .3s"></div>
+        </div>
+        ${missing>0?`<div style="font-size:11px;color:#e24b4a;margin-top:4px">Noch ${missing}h nicht zugeteilt</div>`:missing<0?`<div style="font-size:11px;color:#f0a030;margin-top:4px">${Math.abs(missing)}h mehr zugeteilt als geplant</div>`:''}
+      </div>`:
+      allocatedTotal>0?`<div style="margin-top:8px;font-size:11px;color:#aaa">${allocatedTotal}h insgesamt zugeteilt (kein Gesamtstunden-Ziel gesetzt)</div>`:'';
+
     return`<div class="card">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
         <input type="color" value="${p.color}" onchange="projById(${p.id}).color=this.value;renderAll()">
         <input type="text" value="${p.name}" onchange="projById(${p.id}).name=this.value;renderAll()" style="flex:1;min-width:120px">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span class="field-lbl">Gesamtstunden:</span>
+          <input type="number" min="0" max="99999" value="${totalHours||''}" placeholder="optional"
+            onchange="projById(${p.id}).totalHours=+this.value||0;renderAll()" style="width:90px">
+          <span class="field-lbl" style="color:#aaa">Std</span>
+        </div>
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
           <span class="field-lbl">Deadline:</span>
           <input type="date" value="${p.deadline||''}" onchange="projById(${p.id}).deadline=this.value||'';renderAll()">
@@ -445,11 +482,12 @@ function renderProjTab(){
         </div>
         <button class="del" onclick="td().projects=td().projects.filter(x=>x.id!=${p.id});renderAll()">×</button>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 70px 140px 8px 140px 24px;gap:6px;align-items:center;margin-bottom:4px;font-size:11px;color:#888;padding:0 0 4px;border-bottom:0.5px solid #f0f0ec">
-        <span>Entwickler</span><span>Std/Wo</span><span>Von</span><span></span><span>Bis</span><span></span>
+      <div style="display:grid;grid-template-columns:1fr 140px 8px 140px 1fr 24px;gap:6px;align-items:center;margin-bottom:4px;font-size:11px;color:#888;padding:0 0 4px;border-bottom:0.5px solid #f0f0ec">
+        <span>Entwickler</span><span>Von</span><span></span><span>Bis</span><span>Hochrechnung</span><span></span>
       </div>
       ${aRows}
       <button class="btn btn-sm" style="margin-top:8px" onclick="addAsgn(${p.id})">+ Entwickler zuweisen</button>
+      ${coverageBar}
     </div>`;
   }).join('')+`<button class="btn" onclick="addProj()" style="margin-top:4px">+ Projekt</button>`;
 }
@@ -504,6 +542,44 @@ function renderMiniCal(devId){
 function renderDevTab(){
   const t=td();
   document.getElementById('tab-entwickler').innerHTML=t.devs.map(d=>{
+    // find all assignments for this dev across all projects
+    const myAssignments=[];
+    t.projects.forEach(p=>{
+      p.assignments.forEach((a,ai)=>{
+        if(a.devId===d.id) myAssignments.push({p,a,ai});
+      });
+    });
+    const totalAllocated=myAssignments.reduce((s,{a})=>s+(a.hpw||0),0);
+    const overAlloc=totalAllocated>d.cap;
+
+    const projRows=myAssignments.length?`
+      <div style="margin-top:10px;margin-bottom:6px">
+        <div style="font-size:12px;color:#888;margin-bottom:6px">Stunden pro Woche je Projekt:</div>
+        <div style="display:grid;grid-template-columns:1fr 140px 8px 140px 72px auto;gap:6px;align-items:center;font-size:11px;color:#888;margin-bottom:4px;padding-bottom:4px;border-bottom:0.5px solid #f0f0ec">
+          <span>Projekt</span><span>Von</span><span></span><span>Bis</span><span>Std/Wo</span><span></span>
+        </div>
+        ${myAssignments.map(({p,a,ai})=>`
+          <div style="display:grid;grid-template-columns:1fr 140px 8px 140px 72px auto;gap:6px;align-items:center;padding:5px 0;border-bottom:0.5px solid #f8f8f6">
+            <span style="display:inline-flex;align-items:center;gap:6px">
+              <span style="width:10px;height:10px;border-radius:50%;background:${p.color};flex-shrink:0;display:inline-block"></span>
+              <span style="font-size:13px;font-weight:500;color:#1a1a1a">${p.name}</span>
+            </span>
+            <span style="font-size:12px;color:#888">${fmtFull(a.startDate)}</span>
+            <span style="font-size:11px;color:#aaa">–</span>
+            <span style="font-size:12px;color:#888">${fmtFull(a.endDate)}</span>
+            <input type="number" min="0" max="${d.cap}" value="${a.hpw||0}"
+              onchange="setHpw(${p.id},${ai},+this.value)"
+              style="width:62px;font-weight:500;${(a.hpw||0)>0?'border-color:#378ADD;':''}">
+            <span style="font-size:11px;color:#aaa">Std/Wo</span>
+          </div>`).join('')}
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:6px;padding-top:6px;border-top:0.5px solid #f0f0ec">
+          <span style="font-size:12px;color:#888">Gesamt zugeteilt:</span>
+          <span style="font-size:13px;font-weight:600;color:${overAlloc?'#e24b4a':totalAllocated===d.cap?'#3a9e60':'#1a1a1a'}">${totalAllocated} / ${d.cap} Std/Wo</span>
+          ${overAlloc?`<span style="font-size:11px;color:#e24b4a">Überlastet!</span>`:''}
+        </div>
+      </div>`
+    :`<div style="margin-top:8px;font-size:12px;color:#bbb;font-style:italic">Keine Projekte zugewiesen</div>`;
+
     return`<div class="card">
       <div class="dev-header">
         <div class="avatar" style="background:${d.color};color:${d.ctxt}">${initials(d.name)}</div>
@@ -515,6 +591,7 @@ function renderDevTab(){
         </div>
         <button class="del" onclick="td().devs=td().devs.filter(x=>x.id!=${d.id});renderAll()">×</button>
       </div>
+      ${projRows}
       ${renderMiniCal(d.id)}
     </div>`;
   }).join('')+`<button class="btn" onclick="addDev()" style="margin-top:4px">+ Entwickler</button>`;
@@ -530,11 +607,13 @@ function toggleAbsDay(did,dateStr){
 function calPrev(did){const cs=getCalState(did);cs.m--;if(cs.m<0){cs.m=11;cs.y--;}renderDevTab();}
 function calNext(did){const cs=getCalState(did);cs.m++;if(cs.m>11){cs.m=0;cs.y++;}renderDevTab();}
 
+function setHpw(pid,ai,v){const p=projById(pid);if(p&&p.assignments[ai])p.assignments[ai].hpw=v;renderAll()}
 function pasgn(pid,ai,k,v){const p=projById(pid);if(p&&p.assignments[ai])p.assignments[ai][k]=v;renderAll()}
+function pasgnTotal(pid,ai,v){const p=projById(pid);if(p&&p.assignments[ai])p.assignments[ai].totalHours=v;renderAll()}
 function rmAsgn(pid,ai){const p=projById(pid);if(p)p.assignments.splice(ai,1);renderAll()}
-function addAsgn(pid){const p=projById(pid);const t=td();if(p)p.assignments.push({devId:t.devs[0]?.id||1,hpw:8,startDate:today(),endDate:addWeeks(today(),4)});renderAll()}
+function addAsgn(pid){const p=projById(pid);const t=td();if(p)p.assignments.push({devId:t.devs[0]?.id||1,hpw:0,startDate:today(),endDate:addWeeks(today(),4)});renderAll()}
 function addDev(){const t=td();t.dc++;const ci=t.devs.length%AVT_BG.length;t.devs.push({id:t.dc,name:'Dev '+t.dc,cap:40,absences:[],color:AVT_BG[ci],ctxt:AVT_TX[ci]});renderAll()}
-function addProj(){const t=td();t.pc++;t.projects.push({id:t.pc,name:'Projekt '+t.pc,color:COLORS[t.pc%COLORS.length],deadline:'',assignments:[{devId:t.devs[0]?.id||1,hpw:8,startDate:today(),endDate:addWeeks(today(),4)}]});renderAll()}
+function addProj(){const t=td();t.pc++;t.projects.push({id:t.pc,name:'Projekt '+t.pc,color:COLORS[t.pc%COLORS.length],deadline:'',totalHours:0,assignments:[{devId:t.devs[0]?.id||1,hpw:0,startDate:today(),endDate:addWeeks(today(),4)}]});renderAll()}
 
 function renderAll(){renderGanttTab();renderProjTab();renderDevTab();scheduleSave(activeTeam)}
 
